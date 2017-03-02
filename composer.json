@@ -2,7 +2,14 @@
     "name": "notfoundsam/yahoo-auction",
     "type": "library",
     "description": "Yahoo auction bidder",
-    "version": "1.0.0",
+    "keywords": ["yahoo", "auction"],
+    "homepage": "https://github.com/notfoundsam/yahoo-auction",
+    "authors": [
+        {
+            "name": "Alexey Zazimko",
+            "homepage": "https://github.com/notfoundsam"
+        }
+    ],
     "license": "MIT",
     "require": {
         "php": ">=5.4.0",
