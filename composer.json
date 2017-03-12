@@ -1,0 +1,25 @@
+{
+    "name": "notfoundsam/yahoo-auction",
+    "type": "library",
+    "description": "Yahoo auction bidder",
+    "keywords": ["yahoo", "auction"],
+    "homepage": "https://github.com/notfoundsam/yahoo-auction",
+    "authors": [
+        {
+            "name": "Alexey Zazimko",
+            "homepage": "https://github.com/notfoundsam"
+        }
+    ],
+    "version": "1.0.0",
+    "license": "MIT",
+    "require": {
+        "php": ">=5.4.0",
+        "sunra/php-simple-html-dom-parser": "~1.5.0",
+        "rmccue/requests": ">=1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Yahoo\\Auction\\": "src/"
+        }
+    }
+}
