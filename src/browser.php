@@ -124,7 +124,7 @@ class Browser
     {
         if ($auc_id)
         {
-            $this->getAuctionInfoAsXml();
+            $this->getAuctionInfoAsXml($auc_id);
         }
 
         if ($this->auctionInfo == null)
