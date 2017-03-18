@@ -116,11 +116,17 @@ class Browser
     /**
      * Return images link of lot
      *
-     * @return array Return array with images url from stored auctionInfo
+     * @param  string $auc_id Auction ID
+     * @return array          Return array with images url from stored auctionInfo
      *
      */
-    public function getAuctionImgsUrl()
+    public function getAuctionImgsUrl($auc_id = null)
     {
+        if ($auc_id)
+        {
+            $this->getAuctionInfoAsXml();
+        }
+
         if ($this->auctionInfo == null)
             return [];
         
