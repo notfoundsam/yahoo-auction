@@ -114,6 +114,27 @@ class Browser
     }
 
     /**
+     * Return images link of lot
+     *
+     * @return array Return array with images url from stored auctionInfo
+     *
+     */
+    public function getAuctionImgsUrl()
+    {
+        if ($this->auctionInfo == null)
+            return [];
+        
+        $imges = [];
+
+        foreach ($this->auctionInfo->Result->Img->children() as $img)
+        {
+            $imges[] = (string) $img;
+        }
+
+        return $imges;
+    }
+
+    /**
      * Get XML odject by auction id
      *
      * @return SimpleXMLElement|null Return storred XML Object or null
