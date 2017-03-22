@@ -91,21 +91,23 @@ class Parser
      * Also get all links to another bidding pages (exclude current page) if they exist
      *
      * @param  string $body HTML page with bidding auctions
-     * @return array|null   Return array with auctions in bid and array of pages ['auctions', 'pages'] or null if list of auctions is empty
+     * @return array  Return array with auctions in bid and array of pages ['auctions', 'pages']
      *
      */
     public static function getBiddingLots(&$body)
     {
         $html = static::getHtmlDom($body);
 
-        $data = [];
-        $pages = [];
+        $data = [
+            'pages' => [],
+            'lots' => []
+        ];
 
         $bidding_table = self::findTable($html, self::$TABLE_BID);
 
         if (!$bidding_table)
         {
-            return null;
+            return $data;
         }
 
         if ($p_t1 = $html->find('table', 3))
@@ -114,19 +116,18 @@ class Parser
             {
                 if ($p_td = $p_t2->find('td', 0))
                 {
-                    $pages = $p_td->find('a');
-                    foreach($pages as $page)
+                    $data['pages'] = $p_td->find('a');
+                    foreach($data['pages'] as $page)
                     {
                         if ( !(int)$page->innertext )
                             break;
                         
-                        $pages[] = $page->innertext;
+                        $data['pages'][] = $page->innertext;
                     }
                 }
             }   
         }
 
-        $lots = [];
         $is_header = true;
 
         foreach ($bidding_table->children as $i => $tr)
@@ -176,11 +177,8 @@ class Parser
                 }
             }
             
-            $lots[] = $lot;
+            $data['lots'][] = $lot;
         }
-
-        $data['pages'] = $pages;
-        $data['lots'] = $lots;
         
         return $data;
     }
