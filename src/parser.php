@@ -91,21 +91,23 @@ class Parser
      * Also get all links to another bidding pages (exclude current page) if they exist
      *
      * @param  string $body HTML page with bidding auctions
-     * @return array|null   Return array with auctions in bid and array of pages ['auctions', 'pages'] or null if list of auctions is empty
+     * @return array  Return array with auctions in bid and array of pages ['auctions', 'pages']
      *
      */
     public static function getBiddingLots(&$body)
     {
         $html = static::getHtmlDom($body);
 
-        $data = [];
-        $a_pages = [];
+        $data = [
+            'pages' => [],
+            'lots' => []
+        ];
 
         $bidding_table = self::findTable($html, self::$TABLE_BID);
 
         if (!$bidding_table)
         {
-            return null;
+            return $data;
         }
 
         if ($p_t1 = $html->find('table', 3))
@@ -114,62 +116,69 @@ class Parser
             {
                 if ($p_td = $p_t2->find('td', 0))
                 {
-                    $pages = $p_td->find('a');
-                    foreach($pages as $page)
+                    $data['pages'] = $p_td->find('a');
+                    foreach($data['pages'] as $page)
                     {
                         if ( !(int)$page->innertext )
                             break;
                         
-                        $a_pages[] = $page->innertext;
+                        $data['pages'][] = $page->innertext;
                     }
                 }
             }   
         }
 
-        $data['pages'] = $a_pages;
+        $is_header = true;
 
-        $a_auctions = [];
-        $first_tr = true;
-
-        foreach ($bidding_table->children as $key => $tr)
+        foreach ($bidding_table->children as $i => $tr)
         {
-            $a_tr = [];
-            if (!$tr->children())
+            $lot = [];
+
+            if ( !$tr->children())
                 continue;
 
-            if ($first_tr)
+            if ($is_header)
             {
-                $first_tr = false;
+                $is_header = false;
                 continue;
             }
 
-            foreach ($tr->children() as $i => $td)
+            foreach ($tr->children() as $j => $td)
             {
-                if ($i == 0)
-                {
-                    continue;
-                }
-                if ($i > 6)
+                if ($j > 6)
                     break;
-                if ($i == 1)
+
+                switch ($j)
                 {
-                    $auc_id = end((explode('/', $td->find('a', 0)->href)));
-                    $a_tr[] = $auc_id;
-                }
-                if ($i == 2 || $i == 6)
-                {
-                    $a_tr[] = trim(str_replace(static::$JP, static::$EN, strip_tags($td->innertext)));
-                }
-                else
-                {
-                    $a_tr[] = trim(strip_tags($td->innertext));
+                    case 0:
+                        continue;
+                        break;
+                    case 1:
+                        $lot['id'] = end((explode('/', $td->find('a', 0)->href)));
+                        $lot['title'] = trim(strip_tags($td->innertext));
+                        break;
+                    case 2:
+                        $lot['price'] = trim(str_replace(static::$JP, static::$EN, strip_tags($td->innertext)));
+                        break;
+                    case 3:
+                        $lot['bids'] = trim(strip_tags($td->innertext));
+                        break;
+                    case 4:
+                        $lot['vendor'] = trim(strip_tags($td->innertext));
+                        break;
+                    case 5:
+                        $lot['bidder'] = trim(strip_tags($td->innertext));
+                        break;
+                    case 6:
+                        $lot['end'] = trim(str_replace(static::$JP, static::$EN, strip_tags($td->innertext)));
+                        break;
+                    default:
+                        break;
                 }
             }
             
-            $a_auctions[] = $a_tr;
+            $data['lots'][] = $lot;
         }
-
-        $data['auctions'] = $a_auctions;
         
         return $data;
     }

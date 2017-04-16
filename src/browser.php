@@ -100,7 +100,7 @@ class Browser
         {
             if ( (int) $info->Code == 102)
             {
-                throw new BrowserException('Auction not found', 102);  
+                throw new BrowserException('Auction not found', 102);
             }
             else if ( (int) $info->Code == 302 )
             {
@@ -111,6 +111,33 @@ class Browser
         $this->auctionInfo = $info;
         
         return $info;
+    }
+
+    /**
+     * Return images link of lot
+     *
+     * @param  string $auc_id Auction ID
+     * @return array          Return array with images url from stored auctionInfo
+     *
+     */
+    public function getAuctionImgsUrl($auc_id = null)
+    {
+        if ($auc_id)
+        {
+            $this->getAuctionInfoAsXml($auc_id);
+        }
+
+        if ($this->auctionInfo == null)
+            return [];
+        
+        $imges = [];
+
+        foreach ($this->auctionInfo->Result->Img->children() as $img)
+        {
+            $imges[] = (string) $img;
+        }
+
+        return $imges;
     }
 
     /**
@@ -278,7 +305,7 @@ class Browser
      */
     private function getBody($url, $options = null, $method = Requests::GET)
     {
-        $response = $this->session->request($url, [], $options, $method);
+        $response = $this->session->request($url, [], $options, $method, ['timeout' => 30]);
 
         return $response->body;
     }
