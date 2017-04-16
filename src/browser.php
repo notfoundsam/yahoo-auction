@@ -305,7 +305,7 @@ class Browser
      */
     private function getBody($url, $options = null, $method = Requests::GET)
     {
-        $response = $this->session->request($url, [], $options, $method, ['timeout' => 30]);
+        $response = $this->session->request($url, [], $options, $method, ['timeout' => 10, 'connect_timeout' => 10]);
 
         return $response->body;
     }
