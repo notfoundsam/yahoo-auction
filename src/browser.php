@@ -100,7 +100,7 @@ class Browser
         {
             if ( (int) $info->Code == 102)
             {
-                throw new BrowserException('Auction not found', 102);  
+                throw new BrowserException('Auction not found', 102);
             }
             else if ( (int) $info->Code == 302 )
             {
@@ -305,7 +305,7 @@ class Browser
      */
     private function getBody($url, $options = null, $method = Requests::GET)
     {
-        $response = $this->session->request($url, [], $options, $method);
+        $response = $this->session->request($url, [], $options, $method, ['timeout' => 30]);
 
         return $response->body;
     }
