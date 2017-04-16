@@ -52,11 +52,12 @@ class Browser
      * @return object            Return setted Browser object
      *
      */
-    public function __construct($userName, $userPass, $appId, $cookieJar = null)
+    public function __construct($userName, $userPass, $appId, $cookieJar = null, $requestOptons = [])
     {
-        $this->userName = $userName;
-        $this->userPass = $userPass;
-        $this->appId    = $appId;
+        $this->userName      = $userName;
+        $this->userPass      = $userPass;
+        $this->appId         = $appId;
+        $this->requestOptons = $requestOptons;
 
         if ($cookieJar)
         {
@@ -305,7 +306,7 @@ class Browser
      */
     private function getBody($url, $options = null, $method = Requests::GET)
     {
-        $response = $this->session->request($url, [], $options, $method, ['timeout' => 10, 'connect_timeout' => 10]);
+        $response = $this->session->request($url, [], $options, $method, $this->requestOptons);
 
         return $response->body;
     }
