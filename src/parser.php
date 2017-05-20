@@ -88,44 +88,22 @@ class Parser
 
     /**
      * Get all values (like ID, Title, Price etc.) from bidding page
-     * Also get all links to another bidding pages (exclude current page) if they exist
      *
      * @param  string $body HTML page with bidding auctions
-     * @return array  Return array with auctions in bid and array of pages ['auctions', 'pages']
+     * @return array  Return array with auctions in bid
      *
      */
     public static function getBiddingLots(&$body)
     {
         $html = static::getHtmlDom($body);
 
-        $data = [
-            'pages' => [],
-            'lots' => []
-        ];
+        $lots = [];
 
         $bidding_table = self::findTable($html, self::$TABLE_BID);
 
         if (!$bidding_table)
         {
-            return $data;
-        }
-
-        if ($p_t1 = $html->find('table', 3))
-        {
-            if ($p_t2 = $p_t1->find('table', 3))
-            {
-                if ($p_td = $p_t2->find('td', 0))
-                {
-                    $data['pages'] = $p_td->find('a');
-                    foreach($data['pages'] as $page)
-                    {
-                        if ( !(int)$page->innertext )
-                            break;
-                        
-                        $data['pages'][] = $page->innertext;
-                    }
-                }
-            }   
+            return $lots;
         }
 
         $is_header = true;
@@ -177,10 +155,10 @@ class Parser
                 }
             }
             
-            $data['lots'][] = $lot;
+            $lots[] = $lot;
         }
         
-        return $data;
+        return $lots;
     }
 
     /**
