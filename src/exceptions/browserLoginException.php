@@ -1,5 +1,5 @@
 <?php
 
-namespace Yahoo\Auction\Exceptions;
+namespace Yahooauc\Exceptions;
 
 class BrowserLoginException extends \Exception {}
