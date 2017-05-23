@@ -1,8 +1,8 @@
 <?php
 
-namespace Yahoo\Auction;
+namespace Yahooauc;
 
-use Yahoo\Auction\Exceptions\ParserException;
+use Yahooauc\Exceptions\ParserException;
 use Sunra\PhpSimple\HtmlDomParser;
 
 /**

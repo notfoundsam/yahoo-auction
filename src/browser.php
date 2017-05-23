@@ -1,10 +1,10 @@
 <?php
 
-namespace Yahoo\Auction;
+namespace Yahooauc;
 
-use Yahoo\Auction\Parser;
-use Yahoo\Auction\Exceptions\BrowserException;
-use Yahoo\Auction\Exceptions\BrowserLoginException;
+use Yahooauc\Parser;
+use Yahooauc\Exceptions\BrowserException;
+use Yahooauc\Exceptions\BrowserLoginException;
 use Requests_Session;
 use Requests;
 
