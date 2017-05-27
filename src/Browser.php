@@ -34,7 +34,7 @@ class Browser
     private static $OPEN_USER    = 'https://openuser.auctions.yahoo.co.jp/jp/show/mystatus';
     private static $BID_PREVIEW  = 'https://auctions.yahoo.co.jp/jp/show/bid_preview';
     private static $PLACE_BID    = 'https://auctions.yahoo.co.jp/jp/config/placebid';
-    private static $API_URL      = 'http://auctions.yahooapis.jp/AuctionWebService/V2/auctionItem';
+    private static $API_URL      = 'https://auctions.yahooapis.jp/AuctionWebService/V2/auctionItem';
 
     private static $BROWSER_HEADERS = [
         'User-Agent' => 'Mozilla/6.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.1) Gecko/20090715 Firefox/3.5.1 (.NET CLR 3.5.30729)',
