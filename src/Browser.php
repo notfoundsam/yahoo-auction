@@ -38,8 +38,6 @@ class Browser
 
     private static $BROWSER_HEADERS = [
         'User-Agent' => 'Mozilla/6.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.1) Gecko/20090715 Firefox/3.5.1 (.NET CLR 3.5.30729)',
-        'Keep-Alive' => 115,
-        'Connection' => 'keep-alive'
     ];
 
     /**
