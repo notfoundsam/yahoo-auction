@@ -30,8 +30,8 @@ class Browser
 
     private static $AUCTION_URL  = 'http://auctions.yahoo.co.jp/';
     private static $LOGIN_URL    = 'https://login.yahoo.co.jp/config/login';
-    private static $CLOSED_USER  = 'https://closeduser.auctions.yahoo.co.jp/jp/show/mystatus';
-    private static $OPEN_USER    = 'https://openuser.auctions.yahoo.co.jp/jp/show/mystatus';
+    private static $CLOSED_USER  = 'https://auctions.yahoo.co.jp/closeduser/jp/show/mystatus';
+    private static $OPEN_USER    = 'https://auctions.yahoo.co.jp/openuser/jp/show/mystatus';
     private static $BID_PREVIEW  = 'https://auctions.yahoo.co.jp/jp/show/bid_preview';
     private static $PLACE_BID    = 'https://auctions.yahoo.co.jp/jp/config/placebid';
     private static $API_URL      = 'https://auctions.yahooapis.jp/AuctionWebService/V2/auctionItem';
