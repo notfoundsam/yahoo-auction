@@ -30,16 +30,14 @@ class Browser
 
     private static $AUCTION_URL  = 'http://auctions.yahoo.co.jp/';
     private static $LOGIN_URL    = 'https://login.yahoo.co.jp/config/login';
-    private static $CLOSED_USER  = 'http://closeduser.auctions.yahoo.co.jp/jp/show/mystatus';
-    private static $OPEN_USER    = 'http://openuser.auctions.yahoo.co.jp/jp/show/mystatus';
-    private static $BID_PREVIEW  = 'http://auctions.yahoo.co.jp/jp/show/bid_preview';
-    private static $PLACE_BID    = 'http://auctions.yahoo.co.jp/jp/config/placebid';
-    private static $API_URL      = 'http://auctions.yahooapis.jp/AuctionWebService/V2/auctionItem';
+    private static $CLOSED_USER  = 'https://auctions.yahoo.co.jp/closeduser/jp/show/mystatus';
+    private static $OPEN_USER    = 'https://auctions.yahoo.co.jp/openuser/jp/show/mystatus';
+    private static $BID_PREVIEW  = 'https://auctions.yahoo.co.jp/jp/show/bid_preview';
+    private static $PLACE_BID    = 'https://auctions.yahoo.co.jp/jp/config/placebid';
+    private static $API_URL      = 'https://auctions.yahooapis.jp/AuctionWebService/V2/auctionItem';
 
     private static $BROWSER_HEADERS = [
         'User-Agent' => 'Mozilla/6.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.1) Gecko/20090715 Firefox/3.5.1 (.NET CLR 3.5.30729)',
-        'Keep-Alive' => 115,
-        'Connection' => 'keep-alive'
     ];
 
     /**
