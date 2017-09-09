@@ -2,9 +2,6 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-include('../src/browser.php');
-include('../src/parser.php');
-
 use Yahoo\Auction\Browser as Browser;
 
 $userName = "your_yahoo_user";
