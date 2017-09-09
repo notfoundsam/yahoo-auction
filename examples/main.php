@@ -2,7 +2,7 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Yahoo\Auction\Browser as Browser;
+use Yahooauc\Browser as Browser;
 
 $userName = "your_yahoo_user";
 $userPass = "your_yahoo_pass";
