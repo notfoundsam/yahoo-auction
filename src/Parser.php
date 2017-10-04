@@ -132,7 +132,8 @@ class Parser
                         continue;
                         break;
                     case 1:
-                        $lot['id'] = end((explode('/', $td->find('a', 0)->href)));
+                        $tmp = explode('/', $td->find('a', 0)->href);
+                        $lot['id'] = end($tmp);
                         $lot['title'] = trim(strip_tags($td->innertext));
                         break;
                     case 2:
