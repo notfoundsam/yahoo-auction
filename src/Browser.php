@@ -3,6 +3,7 @@
 namespace Yahooauc;
 
 use Yahooauc\Parser;
+use Yahooauc\Exceptions\ApiException;
 use Yahooauc\Exceptions\BrowserException;
 use Yahooauc\Exceptions\BrowserLoginException;
 use Requests_Session;
@@ -21,12 +22,16 @@ use Requests;
  */
 class Browser
 {
+    private $debug               = false;
+
     private $userName            = null;
     private $userPass            = null;
     private $appId               = null;
 
     private $session             = null;
     private $auctionInfo         = null;
+    
+    private $testPath            = null;
 
     private static $AUCTION_URL  = 'http://auctions.yahoo.co.jp/';
     private static $LOGIN_URL    = 'https://login.yahoo.co.jp/config/login';
@@ -35,6 +40,8 @@ class Browser
     private static $BID_PREVIEW  = 'https://auctions.yahoo.co.jp/jp/show/bid_preview';
     private static $PLACE_BID    = 'https://auctions.yahoo.co.jp/jp/config/placebid';
     private static $API_URL      = 'https://auctions.yahooapis.jp/AuctionWebService/V2/auctionItem';
+
+    private static $DEBUG_BID    = 'https://page.auctions.yahoo.co.jp/jp/auction/x000000000';
 
     private static $BROWSER_HEADERS = [
         'User-Agent' => 'Mozilla/6.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.1) Gecko/20090715 Firefox/3.5.1 (.NET CLR 3.5.30729)',
@@ -52,6 +59,14 @@ class Browser
      */
     public function __construct($userName, $userPass, $appId, $cookieJar = null, $requestOptons = [])
     {
+        if ($env = getenv('YAHOO_AUC_ENV'))
+        {
+            if (strtolower($env) !== 'production')
+            {
+                $this->debug(true);
+            }
+        }
+
         $this->userName      = $userName;
         $this->userPass      = $userPass;
         $this->appId         = $appId;
@@ -68,6 +83,18 @@ class Browser
     }
 
     /**
+     * Debug mode to test your application locally
+     *
+     * @param bool $debug      Enable or disable debug mode
+     * @param string $testPath Set the directory path with response files
+     */
+    public function debug($debug, $testPath = null)
+    {
+        $this->debug = $debug;
+        $this->testsPath = $testPath ? $testPath : realpath(__DIR__.'/../tests/').DIRECTORY_SEPARATOR;
+    }
+
+    /**
      * Get Browser cookiesJar to store for the next request without login
      *
      */
@@ -81,7 +108,7 @@ class Browser
      *
      * @param  string $auc_id   Auction ID
      * @return SimpleXMLElement Return XML Object
-     * @throws BrowserException Throw exception if auction id is invalid or not found
+     * @throws ApiException Throw exception if auction id is invalid or not found etc.
      *
      */
     public function getAuctionInfoAsXml($auc_id)
@@ -95,15 +122,19 @@ class Browser
 
         $info = simplexml_load_string($body);
 
-        if ($info->Code)
+        if (isset($info->Message))
         {
-            if ( (int) $info->Code == 102)
+            throw new ApiException($info->Message, 403);
+        }
+        else if (isset($info->Code))
+        {
+            if ( (int) $info->Code == 301)
             {
-                throw new BrowserException('Auction not found', 102);
+                throw new ApiException('Auction not found', 301);
             }
             else if ( (int) $info->Code == 302 )
             {
-                throw new BrowserException('Auction ID is invalid', 302);
+                throw new ApiException('Auction ID is invalid', 302);
             }
         }
 
@@ -196,6 +227,7 @@ class Browser
      * @param  string $auc_id auction ID
      * @param  int $price     Price to bid
      * @return bool           Reurn true if bid was successful
+     * @throws BrowserException Throw exception if the auction isn't open
      *
      */
     public function bid($auc_id, $price = 0)
@@ -282,7 +314,7 @@ class Browser
         $options['.persistent'] = 'y';
 
         /* Pause before submit (important because yahoo decline login if it's too fast) */
-        sleep(3);
+        if (!$this->debug) sleep(3);
 
         $body = $this->getBody(static::$LOGIN_URL, $options, Requests::POST);
         
@@ -304,6 +336,8 @@ class Browser
      */
     private function getBody($url, $options = null, $method = Requests::GET)
     {
+        if ($this->debug) return $this->readFile($url, $options, $method);
+
         $response = $this->session->request($url, [], $options, $method, $this->requestOptons);
 
         return $response->body;
@@ -359,5 +393,79 @@ class Browser
         $options['Quantity'] = 1;
 
         return $options;
+    }
+
+    /**
+     * Return body of HTML from file when debug mode is true
+     *
+     * @param  string $url    Target url
+     * @param  array $options Query parameters if method is GET or data values if method is POST
+     * @param  string $method Request method
+     * @return string         Return body of HTML
+     *
+     */
+    private function readFile($url, $options, $method)
+    {
+        $testsPath = realpath(__DIR__.'/../tests/').DIRECTORY_SEPARATOR;
+
+        switch ($url) {
+            case static::$AUCTION_URL:
+                return file_get_contents($testsPath.'auction_url.html');
+            
+            case static::$LOGIN_URL:
+                return $method == Requests::GET ? 
+                        file_get_contents($testsPath.'login_url_get.html') :
+                        file_get_contents($testsPath.'login_url_post.html');
+            
+            case static::$API_URL:
+                if ($options)
+                {
+                    if (!isset($options['appid']) || !isset($options['auctionID']))
+                    {
+                        return file_get_contents($testsPath.'api_bad_request.xml');
+                    }
+                    if ($options['appid'] != 'app_id_random_hash')
+                    {
+                        return file_get_contents($testsPath.'api_forbidden.xml');
+                    }
+                    if (!preg_match('/[a-z]{1}[0-9]{9}/', $options['auctionID']))
+                    {
+                        return file_get_contents($testsPath.'api_302.xml');
+                    }
+                    if (!in_array($options['auctionID'], ['e000000000', 'x000000000']))
+                    {
+                        return file_get_contents($testsPath.'api_301.xml');
+                    }
+                    if ($options['auctionID'] == 'e000000000')
+                    {
+                        return file_get_contents($testsPath.'api_url_ended.xml');
+                    }
+                }
+                return file_get_contents($testsPath.'api_url.xml');
+            
+            case static::$OPEN_USER:
+                return file_get_contents($testsPath.'open_user.html');
+            
+            case static::$CLOSED_USER:
+                return file_get_contents($testsPath.'closed_user.html');
+
+            case static::$DEBUG_BID:
+                return file_get_contents($testsPath.'bid_info.html');
+
+            case static::$BID_PREVIEW:
+                return file_get_contents($testsPath.'bid_preview.html');
+
+            case static::$PLACE_BID:
+                if ($options && isset($options['Bid']) && (int) $options['Bid'] >= 1000)
+                {
+                    return file_get_contents($testsPath.'place_bid.html');
+                }
+                return file_get_contents($testsPath.'place_bid_price_up.html');
+            
+            default:
+                break;
+        }
+
+        return '';
     }
 }
