@@ -1,4 +1,4 @@
-
 /vendor
 /examples/pages
 *.cache
+/composer.lock

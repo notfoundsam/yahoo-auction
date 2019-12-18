@@ -4,7 +4,7 @@ namespace Yahooauc;
 
 use Yahooauc\Exceptions\ParserException;
 use Yahooauc\Exceptions\RebidException;
-use Sunra\PhpSimple\HtmlDomParser;
+use KubAT\PhpSimple\HtmlDomParser;
 
 /**
  * Class parse Yahoo auction HTML pages
@@ -130,7 +130,6 @@ class Parser
                 switch ($j)
                 {
                     case 0:
-                        continue;
                         break;
                     case 1:
                         $tmp = explode('/', $td->find('a', 0)->href);
