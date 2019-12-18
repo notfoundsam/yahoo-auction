@@ -119,6 +119,7 @@ $browser->bid("x000000000", 1000); // Success
 ```
 
 ## About v1.1.0
+
 ### Features
 - Added the debug mode.
 
@@ -127,6 +128,10 @@ $browser->bid("x000000000", 1000); // Success
 
 ### Updates
 - Improved work with Yahoo API.
+- Compatibility for php 7.3.
+
+### Notes
+- Replace `sunra/php-simple-html-dom-parser` with `Kub-AT/php-simple-html-dom-parser` to support php 7.3.
 
 ### Migration from v1.0.x
 - Method `getAuctionInfoAsXml()` now throw `ApiException` instead of `BrowserException`.
