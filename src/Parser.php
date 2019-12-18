@@ -3,7 +3,8 @@
 namespace Yahooauc;
 
 use Yahooauc\Exceptions\ParserException;
-use Sunra\PhpSimple\HtmlDomParser;
+use Yahooauc\Exceptions\RebidException;
+use KubAT\PhpSimple\HtmlDomParser;
 
 /**
  * Class parse Yahoo auction HTML pages
@@ -129,7 +130,6 @@ class Parser
                 switch ($j)
                 {
                     case 0:
-                        continue;
                         break;
                     case 1:
                         $tmp = explode('/', $td->find('a', 0)->href);
@@ -199,6 +199,7 @@ class Parser
      * @param  string $body    Html page with bid result
      * @return bool            Return true if bid was success or false if unknown result (like won lots limit etc.)
      *
+     * @throws RebidException  Throw exception if price of bid under then current price
      * @throws ParserException Throw exception if bid was not success
      *
      */
@@ -221,11 +222,11 @@ class Parser
                 throw new ParserException('Page says: '.$p_result->innertext);
             }
         }
-        else if ($p_result = $html->find('div[class=decSmryTable]', 0))
+        else if ($p_result = $html->find('div[class=RebidText]', 0))
         {
             if (preg_match(static::$PRICE_UP, $p_result))
             {
-                throw new ParserException('Price goes up', 10);
+                throw new RebidException('Rebid page. Try with a highest price', 10);
             }
             else
             {

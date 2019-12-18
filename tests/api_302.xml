@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Error>
+  <Message>指定したオークションIDは無効です。</Message>
+  <Detail/>
+  <Code>302</Code>
+</Error>
