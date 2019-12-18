@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ログイン - Yahoo! JAPAN</title>
+</head>
+<body id="yregtctx" onload="document.login_form.login.focus();">
+<div id="wrapper" >
+<div id="contents">
+<div class="yregwp">
+<div id="yregct" class="yregclb">
+<div id="yreglg">
+<div class="yregbx">
+<div class="yregbxi" id="themeBox">
+<fieldset id="loginfs">
+<legend>ログインフォーム</legend>
+<form method="post" action="/config/login" name="login_form">
+<input type="hidden" name=".ct" value="">
+<input type="hidden" name=".display" value="">
+<input type="hidden" name=".done" value="http://auctions.yahoo.co.jp/">
+<input type="hidden" name=".keep" value="">
+<input type="hidden" name=".reg" value="https://account.edit.yahoo.co.jp/registration?src=auc&done=http%3A%2F%2Fauctions.yahoo.co.jp%2F">
+<input type="hidden" name=".src" value="auc">
+<input type="hidden" name=".suppreg_skip" value="">
+<input type="hidden" name=".yby" value="">
+<input type="hidden" name="auth_lv" value="">
+<input type="hidden" name="card_cushion_skip" value="">
+<input type="hidden" name="ckey" value="">
+<input type="hidden" name="nolink" value="">
+<input type="hidden" name="nonotice" value="">
+<input type="hidden" name="noreg" value="">
+<input type="hidden" name="referrer" value="">
+<input type="hidden" name="t_cushion" value="">
+<input type="hidden" name=".albatross" value="dD16bGo4ZEImc2s9NUtxTmxG==">
+<input type="hidden" name=".requiredPsCheckBox" value="">
+<input type="hidden" name=".slogin" value="">
+<input type="hidden" name=".tries" value="1">
+<input type="hidden" name="ls_autocomp" value="">
+<input type="hidden" name="showpw_status" value="">
+<input type="hidden" name="u" value="8f34ghpgv4ebj">
+<input type="hidden" name="inactive_pw" value="">
+<input type="hidden" name="send_sms_counts" value="1">
+<input type="hidden" name="send_mail_counts" value="1">
+<input type="hidden" name="version" value="">
+<input type="hidden" name="auth_method" value="">
+<input type="hidden" name="pwless_captchaid" value="">
+<input type="hidden" name="sms_token" value="">
+<input type="hidden" name="mail_token" value="">
+<input type="hidden" name="masked_dest" value="">
+<input type="hidden" name="bcrumb_id_check" value="dD16bGo4ZEImc2s9Qzl5blFC==">
+<input type="hidden" name="bcrumb_send_sms" value="dD16bGo4ZEImc2s9bTlCU3k0==">
+<input type="hidden" name="bcrumb_send_mail" value="dD16bGo4ZEImc2s9TEpFY0NP==">
+<input type="hidden" name="user_name" value="">
+<input type="hidden" name="assertionInfo" value="">
+<input type="hidden" name="webauthn" value="">
+<input type="hidden" name="fido" value="">
+<input type="hidden" name="auth_list" value="">
+</form><!--/#loginForm-->
+</fieldset>
+</div>
+</div><!-- /.yregbx -->
+</div>
+</div><!-- /#yregct -->
+</div><!-- /.yregwp -->
+</div><!-- /#contents -->
+</div><!-- /#wrapper -->
+<script type="text/javascript">
+try {
+/* iFrame抑制処理 */
+if (window.top !== window.self) window.top.location.href = location.href;
+
+YAHOO.JP.idpf.Login.init({ult:ins, timeout:7000});
+
+YAHOO.JP.idpf.Theme.init({
+    themeUrl: "https://protect.login.yahoo.co.jp/theme/set",
+    color:    "c01",
+    texture:  "t01",
+    bc:       "dD16bGo4ZEImc2s9YTVrdlRM==",
+    opened:   "",
+    type:     "browser",
+    done:     "http://auctions.yahoo.co.jp/"
+});
+
+document.getElementsByName(".albatross")[0].value = "dD16bGo4ZEImc2s9eWc4UFB0==";
+} catch(e) {
+  var img = new Image(),
+    key,
+    param = {
+      err : e.name.replace(/\s/g, "_") + "___" + e.message.replace(/\s/g, "_"),
+      stack : e.stack ? e.stack.replace(/\s/g, "_"): "",
+      v : YAHOO.JP.idpf.VERSION.LOGIN,
+      t : (new Date()).getTime()
+    },
+    q = "",
+    p = [],
+    u;
+  for(key in param) {
+    p.push(key + "=" + param[key]);
+  }
+  q = "?" + p.join("&");
+  u = location.protocol + "//" + location.hostname + "/login/js_err";
+  img.src = u + q;
+}
+</script>
+</body>
+</html>
