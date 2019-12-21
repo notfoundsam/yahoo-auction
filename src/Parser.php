@@ -187,7 +187,7 @@ class Parser
         }
         else
         {
-            throw new ParserException('Page POST form not found');
+            throw new ParserException('Page POST form not found', 20);
         }
 
         return $arr;
@@ -219,7 +219,7 @@ class Parser
             }
             else
             {
-                throw new ParserException('Page says: '.$p_result->innertext);
+                throw new ParserException('Page says: '.$p_result->innertext, 50);
             }
         }
         else if ($p_result = $html->find('div[class=RebidText]', 0))
@@ -230,7 +230,7 @@ class Parser
             }
             else
             {
-                throw new ParserException('Parser could not find result, maybe price goes up');
+                throw new ParserException('Parser could not find result, maybe price goes up', 30);
             }
         }
 
@@ -247,7 +247,7 @@ class Parser
     {
         if (!$body)
         {
-            throw new ParserException('Body of HTML Document is empty');
+            throw new ParserException('Body of HTML Document is empty', 10);
         }
 
         return HtmlDomParser::str_get_html($body);

@@ -236,7 +236,7 @@ class Browser
 
         if ( (string) $info->Result->Status != 'open' )
         {
-            throw new BrowserException('Auction has ended');
+            throw new BrowserException('Auction has ended', 10);
         }
 
         $auc_url = (string) $info->Result->AuctionItemUrl;
@@ -287,7 +287,7 @@ class Browser
 
         if (!$albatross[0][1])
         {
-            throw new BrowserLoginException('Albatross key not found');
+            throw new BrowserLoginException('Albatross key not found', 10);
         }
 
         $inputs = Parser::getHiddenInputs($body);
@@ -321,7 +321,7 @@ class Browser
         /* Check for correct login */
         if (Parser::checkLogin($body, $this->userName) === false )
         {
-            throw new BrowserLoginException('Login failed');
+            throw new BrowserLoginException('Login failed', 20);
         }
     }
 
@@ -366,7 +366,7 @@ class Browser
             {
                 if ($price < $value['value'])
                 {
-                    throw new BrowserException('Price must be upper or equal '.$value['value']);
+                    throw new BrowserException('Price must be upper or equal '.$value['value'], 20);
                 }
             }
 
