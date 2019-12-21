@@ -122,11 +122,7 @@ class Browser
 
         $info = simplexml_load_string($body);
 
-        if (isset($info->Message))
-        {
-            throw new ApiException($info->Message, 403);
-        }
-        else if (isset($info->Code))
+        if (isset($info->Code))
         {
             if ( (int) $info->Code == 301)
             {
@@ -136,6 +132,10 @@ class Browser
             {
                 throw new ApiException('Auction ID is invalid', 302);
             }
+        }
+        else if (isset($info->Message))
+        {
+            throw new ApiException($info->Message, 403);
         }
 
         $this->auctionInfo = $info;
