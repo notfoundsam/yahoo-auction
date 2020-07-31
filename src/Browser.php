@@ -2,12 +2,15 @@
 
 namespace Yahooauc;
 
-use Yahooauc\Parser;
+use GuzzleHttp\Client;
+use GuzzleHttp\Cookie\CookieJar;
+use SimpleXMLElement;
 use Yahooauc\Exceptions\ApiException;
+use Yahooauc\Exceptions\CaptchaException;
+use Yahooauc\Exceptions\LoginException;
 use Yahooauc\Exceptions\BrowserException;
-use Yahooauc\Exceptions\BrowserLoginException;
-use Requests_Session;
-use Requests;
+use Yahooauc\Exceptions\ParserException;
+use Yahooauc\Exceptions\RebidException;
 
 /**
  * Class use HTTP Requests for get HTML content from auctions.yahoo.co.jp
@@ -22,26 +25,31 @@ use Requests;
  */
 class Browser
 {
-    private $debug               = false;
+    private $userName;
+    private $userPass;
+    private $appId;
+    private $requestOptions;
 
-    private $userName            = null;
-    private $userPass            = null;
-    private $appId               = null;
-
-    private $session             = null;
+    private $client;
     private $auctionInfo         = null;
-    
-    private $testPath            = null;
+    private $captchaId           = null;
+    private $loginWithCaptcha    = false;
 
-    private static $AUCTION_URL  = 'http://auctions.yahoo.co.jp/';
-    private static $LOGIN_URL    = 'https://login.yahoo.co.jp/config/login';
-    private static $CLOSED_USER  = 'https://auctions.yahoo.co.jp/closeduser/jp/show/mystatus';
-    private static $OPEN_USER    = 'https://auctions.yahoo.co.jp/openuser/jp/show/mystatus';
-    private static $BID_PREVIEW  = 'https://auctions.yahoo.co.jp/jp/show/bid_preview';
-    private static $PLACE_BID    = 'https://auctions.yahoo.co.jp/jp/config/placebid';
-    private static $API_URL      = 'https://auctions.yahooapis.jp/AuctionWebService/V2/auctionItem';
+    private $debug               = false;
+    private $debugShowCaptcha    = false;
+    private $debugYahooBlocked   = false;
+    private $testsPath           = null;
 
-    private static $DEBUG_BID    = 'https://page.auctions.yahoo.co.jp/jp/auction/x000000000';
+    private static $AUCTION_URL     = 'http://auctions.yahoo.co.jp/';
+    private static $LOGIN_CHECK_URL = 'https://auctions.yahoo.co.jp/';
+    private static $LOGIN_URL       = 'https://login.yahoo.co.jp/config/login';
+    private static $CLOSED_USER     = 'https://auctions.yahoo.co.jp/closeduser/jp/show/mystatus';
+    private static $OPEN_USER       = 'https://auctions.yahoo.co.jp/openuser/jp/show/mystatus';
+    private static $BID_PREVIEW     = 'https://auctions.yahoo.co.jp/jp/show/bid_preview';
+    private static $PLACE_BID       = 'https://auctions.yahoo.co.jp/jp/config/placebid';
+    private static $API_URL         = 'https://auctions.yahooapis.jp/AuctionWebService/V2/auctionItem';
+
+    private static $DEBUG_BID       = 'https://page.auctions.yahoo.co.jp/jp/auction/x000000000';
 
     private static $BROWSER_HEADERS = [
         'User-Agent' => 'Mozilla/6.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.1) Gecko/20090715 Firefox/3.5.1 (.NET CLR 3.5.30729)',
@@ -54,57 +62,64 @@ class Browser
      * @param  string $userPass  Your Yahoo account password
      * @param  string $appId     Your Yahoo application ID
      * @param  string $cookieJar Stored cookieJar object
-     * @return object            Return setted Browser object
+     * @return void
      *
      */
-    public function __construct($userName, $userPass, $appId, $cookieJar = null, $requestOptons = [])
+    public function __construct($userName, $userPass, $appId, $cookieJar = null, $requestOptions = [])
     {
-        if ($env = getenv('YAHOO_AUC_ENV'))
-        {
-            if (strtolower($env) !== 'production')
-            {
+        if ($env = getenv('YAHOO_AUC_ENV')) {
+            if (strtolower($env) !== 'production') {
                 $this->debug(true);
             }
         }
 
-        $this->userName      = $userName;
-        $this->userPass      = $userPass;
-        $this->appId         = $appId;
-        $this->requestOptons = $requestOptons;
+        $this->userName       = $userName;
+        $this->userPass       = $userPass;
+        $this->appId          = $appId;
+        $this->requestOptions = $requestOptions;
 
-        if ($cookieJar)
-        {
-            $this->session = new Requests_Session(static::$AUCTION_URL, static::$BROWSER_HEADERS, [], ['cookies' => $cookieJar]);
-        }
-        else
-        {
-            $this->login();
-        }
+        $cookies = $cookieJar ? $cookieJar : new CookieJar;
+        $this->client = new Client(['cookies' => $cookies, 'headers' => static::$BROWSER_HEADERS]);
     }
 
     /**
      * Debug mode to test your application locally
      *
-     * @param bool $debug      Enable or disable debug mode
-     * @param string $testPath Set the directory path with response files
+     * @param bool   $debug    Enable or disable debug mode
+     * @param string $testsPath Set the directory path with response files
      */
-    public function debug($debug, $testPath = null)
+    public function debug($debug, $testsPath = null)
     {
         $this->debug = $debug;
-        $this->testsPath = $testPath ? $testPath : realpath(__DIR__.'/../tests/').DIRECTORY_SEPARATOR;
+        $this->testsPath = $testsPath ? $testsPath : realpath(__DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'tests').DIRECTORY_SEPARATOR;
+    }
+
+    /**
+     * @param $showCaptcha
+     */
+    public function debugShowCaptcha($showCaptcha)
+    {
+        $this->debugShowCaptcha = $showCaptcha;
+    }
+
+    /**
+     * @param $yahooBlocked
+     */
+    public function debugYahooBlocked($yahooBlocked)
+    {
+        $this->debugYahooBlocked = $yahooBlocked;
     }
 
     /**
      * Get Browser cookiesJar to store for the next request without login
-     *
      */
     public function getCookie()
     {
-        return $this->session->options['cookies'];
+        return $this->client->getConfig('cookies');
     }
 
     /**
-     * Get XML odject by auction id
+     * Get XML object by auction id
      *
      * @param  string $auc_id   Auction ID
      * @return SimpleXMLElement Return XML Object
@@ -148,26 +163,23 @@ class Browser
      *
      * @param  string $auc_id Auction ID
      * @return array          Return array with images url from stored auctionInfo
-     *
+     * @throws ApiException   Throw exception if has API error
      */
     public function getAuctionImgsUrl($auc_id = null)
     {
-        if ($auc_id)
-        {
+        if ($auc_id) {
             $this->getAuctionInfoAsXml($auc_id);
         }
 
-        if ($this->auctionInfo == null)
-            return [];
+        if ($this->auctionInfo == null) return [];
         
-        $imges = [];
+        $images = [];
 
-        foreach ($this->auctionInfo->Result->Img->children() as $img)
-        {
-            $imges[] = (string) $img;
+        foreach ($this->auctionInfo->Result->Img->children() as $img) {
+            $images[] = (string) $img;
         }
 
-        return $imges;
+        return $images;
     }
 
     /**
@@ -186,10 +198,12 @@ class Browser
      *
      * @param  int $page Number of page with won lots
      * @return array     Return array with only won auction IDs
-     *
+     * @throws BrowserException
      */
     public function getWonIds($page = 1)
     {
+        if (!$this->checkLogin()) throw new BrowserException('Logged off');
+
         $query = [
             'select'  => 'won',
             'picsnum' => '50',
@@ -206,10 +220,12 @@ class Browser
      *
      * @param  int $page Number of bidding page
      * @return array     Return array with lot information and bidding pages if they exist
-     *
+     * @throws BrowserException
      */
     public function getBiddingLots($page = 1)
     {
+        if (!$this->checkLogin()) throw new BrowserException('Logged off');
+
         $query = [
             'select'  => 'bidding',
             'picsnum' => '50',
@@ -218,55 +234,68 @@ class Browser
 
         $body = $this->getBody(static::$OPEN_USER, $query);
 
-        return Parser::getBiddingLots($body);        
+        return Parser::getBiddingLots($body);
     }
 
     /**
      * Bid on yahoo lot
      *
-     * @param  string $auc_id auction ID
-     * @param  int $price     Price to bid
-     * @return bool           Reurn true if bid was successful
-     * @throws BrowserException Throw exception if the auction isn't open
+     * @param  string $auc_id   auction ID
+     * @param  int $price       Price to bid
+     * @return bool             Return true if bid was successful
+     * @throws ApiException     Throw exception if has API error
+     * @throws BrowserException Throw exception if something wrong
+     * @throws RebidException   Throw exception if price of bid under then current price
      *
      */
     public function bid($auc_id, $price = 0)
     {
         $info = $this->getAuctionInfoAsXml($auc_id);
 
-        if ( (string) $info->Result->Status != 'open' )
-        {
+        if ( (string) $info->Result->Status != 'open' ) {
             throw new BrowserException('Auction has ended', 10);
         }
 
         $auc_url = (string) $info->Result->AuctionItemUrl;
-
         $body = $this->getBody($auc_url);
 
-        $inputs = Parser::getHiddenInputs($body);
-        $options = $this->createBidRequstOptions($inputs, $price);
+        try {
+            $inputs = Parser::getHiddenInputs($body);
+        } catch (ParserException $e) {
+            throw new BrowserException($e->getMessage());
+        }
 
-        $body = $this->getBody(static::$BID_PREVIEW, $options, Requests::POST);
+        $options = $this->createBidRequestOptions($inputs, $price);
+        $body = $this->getBody(static::$BID_PREVIEW, $options, 'POST');
 
-        $inputs = Parser::getHiddenInputs($body);
-        $options = $this->createBidRequstOptions($inputs, $price);
+        try {
+            $inputs = Parser::getHiddenInputs($body);
+        } catch (ParserException $e) {
+            throw new BrowserException($e->getMessage());
+        }
 
-        $body = $this->getBody(static::$PLACE_BID, $options, Requests::POST);
+        $options = $this->createBidRequestOptions($inputs, $price);
+        $body = $this->getBody(static::$PLACE_BID, $options, 'POST');
 
-        return Parser::getResult($body);
+        try {
+            $result = Parser::getResult($body);
+        } catch (ParserException $e) {
+            throw new BrowserException($e->getMessage());
+        }
+
+        return $result;
     }
 
     /**
-     * Try to login into yahoo auction with setted credentials
+     * Try to login into yahoo auction with credentials
      *
-     * @return void
-     * @throws BrowserLoginException Throw exception if something wrong
+     * @return bool             Return true if success
+     * @throws LoginException
+     * @throws CaptchaException
      *
      */
-    private function login()
+    public function login()
     {
-        $this->session  = new Requests_Session(static::$AUCTION_URL, static::$BROWSER_HEADERS);
-
         $query = [
             '.lg' => 'jp',
             '.intl' => 'jp',
@@ -278,6 +307,129 @@ class Browser
 
         $body = $this->getBody(static::$LOGIN_URL, $query);
 
+        if (!$ak = $this->getAlbatrossKey($body)) {
+            throw new LoginException('Albatross key not found');
+        }
+
+        try {
+            $inputs = Parser::getHiddenInputs($body);
+        } catch (ParserException $e) {
+            throw new LoginException($e->getMessage());
+        }
+        $options = $this->createLoginOptions($inputs, $ak);
+
+        /* Pause before submit (important because yahoo decline login if it's too fast) */
+        if (!$this->debug) sleep(3);
+
+        $body = $this->getBody(static::$LOGIN_URL, $options, 'POST');
+
+        if ($this->checkLogin($body)) {
+            return true;
+        }
+
+        if ($this->isCaptchaRequired($body)) {
+            file_put_contents('captcha.html', $body);
+            throw new CaptchaException;
+        }
+
+        if (strpos($body, 'In order to prevent unauthorized access, your access to Yahoo! JAPAN has been restricted.') !== false) {
+            throw new LoginException('Yahoo blocked your account for a while');
+        }
+
+        file_put_contents('login_fail.html', $body);
+
+        throw new LoginException('Unexpected behavior');
+    }
+
+    /**
+     * Try to login into yahoo auction with the captcha and credentials
+     * Currently doesn't work
+     *
+     * @param string $captchaId     Captcha ID
+     * @param string $captchaAnswer Answer with letters
+     * @return bool                 Return true if success
+     * @throws LoginException
+     * @throws ParserException
+     */
+    public function loginWithCaptcha($captchaId, $captchaAnswer)
+    {
+        $this->loginWithCaptcha = true;
+        $options = $this->createCaptchaOptions($captchaId, $captchaAnswer);
+        $body = $this->getBody(static::$LOGIN_URL, $options, 'POST');
+
+        file_put_contents('001.html', $body);
+        if (!$ak = $this->getAlbatrossKey($body)) {
+            throw new LoginException('Albatross key not found after captcha');
+        }
+
+        $inputs = Parser::getHiddenInputs($body);
+        $options = $this->createLoginOptions($inputs, $ak);
+        $this->loginWithCaptcha = false;
+
+        /* Pause before submit (important because yahoo decline login if it's too fast) */
+        if (!$this->debug) sleep(3);
+
+        $body = $this->getBody(static::$LOGIN_URL, $options, 'POST');
+        file_put_contents('002.html', $body);
+
+        if ($this->checkLogin($body)) {
+            return true;
+        }
+
+        throw new LoginException('Login with captcha failed');
+    }
+
+    /**
+     * @param string $body Body of the document
+     * @return bool        Return true if logged in
+     */
+    public function checkLogin(&$body = null)
+    {
+        if ($body === null) {
+            $body = $this->getBody(static::$LOGIN_CHECK_URL);
+        }
+
+        return Parser::checkLogin($body, $this->userName);
+    }
+
+    /**
+     * @param string $body Body of the document
+     * @return bool        Return true if a captcha required
+     */
+    private function isCaptchaRequired(&$body)
+    {
+        $id = Parser::getCaptchaId($body);
+
+        if ($id !== null) {
+            $this->captchaId = $id;
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return string|null Return the captcha ID or null
+     */
+    public function getCaptchaId()
+    {
+        return $this->captchaId;
+    }
+
+    /**
+     * @return string|null Return the captcha URL or null
+     */
+    public function getCaptchaUrl()
+    {
+        return $this->captchaId ? 'https://ncaptcha.yahoo.co.jp/v1/img/'.$this->captchaId : null;
+    }
+
+    /**
+     * @param string  $body Body of the document
+     * @return string       Return the albatross key
+     */
+    private function getAlbatrossKey(&$body)
+    {
         preg_match_all(
             '/document\.getElementsByName\("\.albatross"\)\[0\]\.value = "(.*?)";/',
             $body,
@@ -285,13 +437,16 @@ class Browser
             PREG_SET_ORDER
         );
 
-        if (!$albatross[0][1])
-        {
-            throw new BrowserLoginException('Albatross key not found', 10);
-        }
+        return $albatross[0][1];
+    }
 
-        $inputs = Parser::getHiddenInputs($body);
-
+    /**
+     * @param array  $inputs Inputs of the login form
+     * @param string $ak     Albatross key
+     * @return array         Return an array of form options
+     */
+    private function createLoginOptions(&$inputs, $ak)
+    {
         $options = [];
 
         foreach ($inputs as $v)
@@ -303,44 +458,67 @@ class Browser
 
             if ($v['name'] == '.albatross')
             {
-                $v['value'] = $albatross[0][1];
+                $v['value'] = $ak;
             }
 
             $options[$v['name']] = $v['value'];
         }
 
         $options['login']       = $this->userName;
+        $options['user_name']   = $this->userName;
         $options['passwd']      = $this->userPass;
         $options['.persistent'] = 'y';
+        $options['auth_method'] = 'pwd';
+        $options['auth_list']   = 'pwd';
+        $options['fido']        = '0';
 
-        /* Pause before submit (important because yahoo decline login if it's too fast) */
-        if (!$this->debug) sleep(3);
+        return $options;
+    }
 
-        $body = $this->getBody(static::$LOGIN_URL, $options, Requests::POST);
-        
-        /* Check for correct login */
-        if (Parser::checkLogin($body, $this->userName) === false )
-        {
-            throw new BrowserLoginException('Login failed', 20);
-        }
+    /**
+     * @param string $captchaId     Captcha ID
+     * @param string $captchaAnswer Answer with letters
+     * @return array                Return an array of form options
+     */
+    private function createCaptchaOptions($captchaId, $captchaAnswer)
+    {
+        $options = [
+            '.src' => 'auc',
+            '.done' => static::$AUCTION_URL,
+            '.display' => '',
+            'ckey' => '',
+            'auth_lv' => 'pw',
+            'validate' => 'validate',
+            'captchaId' => $captchaId,
+            '.sectry' => '0',
+            'captchaAnswer' => $captchaAnswer,
+            'x' => '115',
+            'y' => '17',
+        ];
+
+        return $options;
     }
 
     /**
      * Send request to Yahoo and return body of HTML
      *
-     * @param  string $url    Target url
-     * @param  array $options Query parameters if method is GET or data values if method is POST
-     * @param  string $method Request method
-     * @return string         Return body of HTML
+     * @param  string $url     Target url
+     * @param  array  $options Query parameters if method is GET or data values if method is POST
+     * @param  string $method  Request method
+     * @return string          Return body of HTML
      *
      */
-    private function getBody($url, $options = null, $method = Requests::GET)
+    private function getBody($url, $options = [], $method = 'GET')
     {
         if ($this->debug) return $this->readFile($url, $options, $method);
 
-        $response = $this->session->request($url, [], $options, $method, $this->requestOptons);
+        if ($method === 'GET') {
+            $response = $this->client->get($url, ['query' => $options]);
+        } else if ($method === 'POST') {
+            $response = $this->client->post($url, ['form_params' => $options]);
+        }
 
-        return $response->body;
+        return $response->getBody()->getContents();
     }
 
     /**
@@ -352,7 +530,7 @@ class Browser
      * @throws BrowserException Throw exception if given price lower than current
      *
      */
-    private function createBidRequstOptions($values, $price)
+    private function createBidRequestOptions($values, $price)
     {
         $options = [];
         $price_setted = false;
@@ -398,10 +576,10 @@ class Browser
     /**
      * Return body of HTML from file when debug mode is true
      *
-     * @param  string $url    Target url
-     * @param  array $options Query parameters if method is GET or data values if method is POST
-     * @param  string $method Request method
-     * @return string         Return body of HTML
+     * @param  string $url     Target url
+     * @param  array  $options Query parameters if method is GET or data values if method is POST
+     * @param  string $method  Request method
+     * @return string          Return body of HTML
      *
      */
     private function readFile($url, $options, $method)
@@ -413,10 +591,23 @@ class Browser
                 return file_get_contents($testsPath.'auction_url.html');
             
             case static::$LOGIN_URL:
-                return $method == Requests::GET ? 
-                        file_get_contents($testsPath.'login_url_get.html') :
-                        file_get_contents($testsPath.'login_url_post.html');
-            
+                if ($method == 'GET') {
+                    return file_get_contents($testsPath.'login_url_get.html');
+                } else {
+                    if ($this->debugShowCaptcha) {
+                        return file_get_contents($testsPath.'login_captcha.html');
+                    } else if ($this->debugYahooBlocked) {
+                        return file_get_contents($testsPath.'login_blocked.html');
+                    } else {
+                        return $this->loginWithCaptcha ?
+                            file_get_contents($testsPath.'login_url_get.html') :
+                            file_get_contents($testsPath.'login_url_post.html');
+                    }
+                }
+
+            case static::$LOGIN_CHECK_URL:
+                return file_get_contents($testsPath.'login_url_post.html');
+
             case static::$API_URL:
                 if ($options)
                 {

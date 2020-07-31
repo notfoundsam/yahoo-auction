@@ -31,6 +31,17 @@ $cookieJar = $cookie !== false ? unserialize($cookie) : [];
 
 $browser = new Browser($userName, $userPass, $appId, $cookieJar);
 ```
+If you don't have cookies yet try to login into Yahoo. 
+It trows `LoginException` or `CaptchaException` if something wrong.
+```
+/* Try to login into Yahoo */
+var_dump($browser->login());
+```
+If you already have cookies try to check it.
+```
+/* Check is logged in */
+var_dump($browser->checkLogin());
+```
 Use the next methods to get information about your auctions or bid on the lot.
 ```
 /* Get information about the lot */
@@ -53,24 +64,25 @@ file_put_contents('cookie.cache', $cookie);
 ```
 
 ### Debug
-Since v1.1.0 you can use the debug mode to test your application locally. Export `YAHOO_AUC_ENV` to your environment. Set it to `production` to use on production or other to use the debug mode.
+Since v1.1.0 you can use the debugging mode to test your application locally. Export `YAHOO_AUC_ENV` to your environment. Set it to `production` to use on production or other to use the debugging mode.
 ```
 export YAHOO_AUC_ENV=local
 ```
-You can also enable or disable the debug mode with the following method.  
+You can also enable or disable the debugging mode with the following method.  
 Pass the second argument with the path to the folder with your test files.
 ```
 $browser->debug($debug = true);
 $browser->debug($debug = true, $testPath = 'your_folder_with_test_pages');
 ```
-### How to use the debug mode
-Replace `test_user` with something else to throw `BrowserLoginException`. It means login failed.
+### How to use the debugging mode
+Replace `test_user` with something else to throw `BrowserLoginException`. It means the login failed.
 ```
 $userName = "not_test_user";
 $userPass = "secret_password";
 $appId    = "app_id_random_hash";
 
 $browser = new Browser($userName, $userPass, $appId, []);
+$browser->debug($debug = true);
 ```
 Replace `app_id_random_hash` with something else to throw `ApiException`.  
 Pass something other than the following format `x000000000` to throw `ApiException`. It means the auction ID is invalid.  
@@ -81,6 +93,7 @@ $userPass = "secret_password";
 $appId    = "not_app_id_random_hash";
 
 $browser = new Browser($userName, $userPass, $appId, []);
+$browser->debug($debug = true);
 $browser->getAuctionInfoAsXml("xxxxxxx01");
 $browser->getAuctionInfoAsXml("x000000001");
 ```
@@ -91,6 +104,7 @@ $userPass = "secret_password";
 $appId    = "app_id_random_hash";
 
 $browser = new Browser($userName, $userPass, $appId, []);
+$browser->debug($debug = true);
 $browser->getBiddingLots(1);
 ```
 Get an array of fake IDs from the first won page.
@@ -100,18 +114,20 @@ $userPass = "secret_password";
 $appId    = "app_id_random_hash";
 
 $browser = new Browser($userName, $userPass, $appId, []);
+$browser->debug($debug = true);
 $browser->getWonIds(1);
 ```
 Bid on the following lot `e000000000` to throw `BrowserException`. This auction has alredy ended.  
 Bid on the following lot `x000000000` with price under `220` to throw `BrowserException`. It means your price is lower than the current price.  
 Bid on the following lot `x000000000` with price between `220` and `999` to throw `RebidException`. It means the price of the lot rose higher and the bid failed.  
-Bid on the following lot `x000000000` with price more than `999` for a successufull bid.
+Bid on the following lot `x000000000` with price more than `999` for a successful bid.
 ```
 $userName = "test_user";
 $userPass = "secret_password";
 $appId    = "app_id_random_hash";
 
 $browser = new Browser($userName, $userPass, $appId, []);
+$browser->debug($debug = true);
 $browser->bid("e000000000", 1000); // Has already ended
 $browser->bid("x000000000", 100);  // Not enough
 $browser->bid("x000000000", 500);  // Rebid page, bid failed
@@ -121,19 +137,17 @@ $browser->bid("x000000000", 1000); // Success
 ## About v1.1.0
 
 ### Features
-- Added the debug mode.
+- Added the debugging mode.
 
 ### Bugfixes
-- Did not throw an exception if the rebid page is shown.
+- Fixed Yahoo login.
 
 ### Updates
-- Improved work with Yahoo API.
-- Compatibility for php 7.3.
-- Added the exception code.
+- Refactoring of code.
 
 ### Notes
-- Replace `sunra/php-simple-html-dom-parser` with `Kub-AT/php-simple-html-dom-parser` to support php 7.3.
+- Replaced `rmccue/requests` with `guzzlehttp/guzzle`
 
-### Migration from v1.0.x
-- Method `getAuctionInfoAsXml()` now throw `ApiException` instead of `BrowserException`.
-- If you want to use the debug mode add `YAHOO_AUC_ENV` to your environment.
+### Migration from v1.1.x
+- You need call `$browser->login()` manually after creating the `Browser` class
+
