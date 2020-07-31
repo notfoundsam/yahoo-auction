@@ -72,14 +72,13 @@ class Parser
 
         foreach ($won_table->children as $key => $tr)
         {
-            $a_tr = [];
-            if (!$tr->children())
-                continue;
+            if (!$tr->children()) continue;
 
-            if ($first_tr){
+            if ($first_tr) {
                 $first_tr = false;
                 continue;
             }
+
             $a_td = $tr->children();
             $ids[] = strip_tags($a_td[1]->innertext);
         }
@@ -226,7 +225,7 @@ class Parser
         {
             if (preg_match(static::$PRICE_UP, $p_result))
             {
-                throw new RebidException('Rebid page. Try with a highest price', 10);
+                throw new RebidException;
             }
             else
             {
@@ -235,6 +234,21 @@ class Parser
         }
 
         return false;
+    }
+
+    /**
+     * @param $body
+     * @return mixed
+     */
+    public static function getCaptchaId(&$body)
+    {
+        $html = static::getHtmlDom($body);
+
+        if ($id = $html->find('#captchaId', 0)) {
+            return $id->value;
+        }
+
+        return null;
     }
 
     /**
