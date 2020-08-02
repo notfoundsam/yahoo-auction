@@ -32,7 +32,7 @@ $cookieJar = $cookie !== false ? unserialize($cookie) : [];
 $browser = new Browser($userName, $userPass, $appId, $cookieJar);
 ```
 If you don't have cookies yet try to login into Yahoo. 
-It trows `LoginException` or `CaptchaException` if something wrong.
+It throws `LoginException` or `CaptchaException` if something wrong.
 ```
 /* Try to login into Yahoo */
 var_dump($browser->login());
@@ -75,7 +75,7 @@ $browser->debug($debug = true);
 $browser->debug($debug = true, $testPath = 'your_folder_with_test_pages');
 ```
 ### How to use the debugging mode
-Replace `test_user` with something else to throw `BrowserLoginException`. It means the login failed.
+Replace `test_user` with something else to throw `LoginException`. It means the login failed.
 ```
 $userName = "not_test_user";
 $userPass = "secret_password";
@@ -117,9 +117,9 @@ $browser = new Browser($userName, $userPass, $appId, []);
 $browser->debug($debug = true);
 $browser->getWonIds(1);
 ```
-Bid on the following lot `e000000000` to throw `BrowserException`. This auction has alredy ended.  
+Bid on the following lot `e000000000` to throw `BrowserException`. This auction has already ended.  
 Bid on the following lot `x000000000` with price under `220` to throw `BrowserException`. It means your price is lower than the current price.  
-Bid on the following lot `x000000000` with price between `220` and `999` to throw `RebidException`. It means the price of the lot rose higher and the bid failed.  
+Bid on the following lot `x000000000` with price between `220` and `999` to throw `RebidException`. It means the price of the lot has rose, and the bid failed.  
 Bid on the following lot `x000000000` with price more than `999` for a successful bid.
 ```
 $userName = "test_user";
@@ -134,20 +134,29 @@ $browser->bid("x000000000", 500);  // Rebid page, bid failed
 $browser->bid("x000000000", 1000); // Success
 ```
 
-## About v1.1.0
+## About v1.2.1
 
 ### Features
-- Added the debugging mode.
+- Detect a page with a captcha. If you send a lot of requests to login.
+- Detect a page with ban. If you send too many requests to login.
+- Added method to check login. `checkLogin()`
+- The `getBiddingLots()` method and `getWonIds()` now throw `LoggedOffException`
+- The `login()` method throws `LoginException` and `CaptchaException`
+- The `bid($auc_id, $price)` method now throws `ApiException`, `BrowserException`, `RebidException`, `AuctionEndedException`
+- You can emulate very many attempts to login in debugging mode.
+- You can emulate too many attempts to login and get ban in debugging mode.
 
 ### Bugfixes
 - Fixed Yahoo login.
 
 ### Updates
-- Refactoring of code.
+- Login to Yahoo has moved to a separated method from the constructor of the class.
+- The `ParserException` won't throw anymore, instead `BrowserException` will be thrown
+- Other refactoring of a code.
 
 ### Notes
 - Replaced `rmccue/requests` with `guzzlehttp/guzzle`
 
 ### Migration from v1.1.x
 - You need call `$browser->login()` manually after creating the `Browser` class
-
+- Also, try to learn from code.
