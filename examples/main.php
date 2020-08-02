@@ -3,7 +3,9 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Yahooauc\Browser as Browser;
+use Yahooauc\Exceptions\AuctionEndedException;
 use Yahooauc\Exceptions\CaptchaException;
+use Yahooauc\Exceptions\LoggedOffException;
 use Yahooauc\Exceptions\LoginException;
 
 $userName = "test_user";
@@ -20,12 +22,12 @@ $cookieJar = $cookie !== false ? unserialize($cookie) : [];
 $browser = new Browser($userName, $userPass, $appId, $cookieJar);
 
 /* Set the debug mode */
-// $browser->debug(true);
+$browser->debug(true);
 
-/* Emulate very much attempts to login */
+/* Emulate very many attempts to login */
 $browser->debugShowCaptcha(true);
 
-/* Emulate too much attempts to login and get ban */
+/* Emulate too many attempts to login and get ban */
 $browser->debugYahooBlocked(true);
 
 /* Check is logged in */
@@ -36,7 +38,7 @@ try {
     var_dump($browser->login());
 
     /* Try to login into Yahoo (Doesn't support yet) */
-    var_dump($browser->loginWithCaptcha($captchaId, $captchaAnswer));
+    // var_dump($browser->loginWithCaptcha($captchaId, $captchaAnswer));
 
     /* Get information about lot */
     var_dump($browser->getAuctionInfoAsXml("lotId"));
@@ -55,6 +57,10 @@ try {
     $cookie = serialize($cookieJar);
     file_put_contents('cookie.cache', $cookie);
 } catch (LoginException $e) {
+    echo trim($e->getMessage())."\n";
+} catch (LoggedOffException $e) {
+    echo trim($e->getMessage())."\n";
+} catch (AuctionEndedException $e) {
     echo trim($e->getMessage())."\n";
 } catch (CaptchaException $e) {
     echo $e->getMessage()."\n";

@@ -7,6 +7,8 @@ use GuzzleHttp\Cookie\CookieJar;
 use SimpleXMLElement;
 use Yahooauc\Exceptions\ApiException;
 use Yahooauc\Exceptions\CaptchaException;
+use Yahooauc\Exceptions\AuctionEndedException;
+use Yahooauc\Exceptions\LoggedOffException;
 use Yahooauc\Exceptions\LoginException;
 use Yahooauc\Exceptions\BrowserException;
 use Yahooauc\Exceptions\ParserException;
@@ -31,14 +33,14 @@ class Browser
     private $requestOptions;
 
     private $client;
-    private $auctionInfo         = null;
-    private $captchaId           = null;
-    private $loginWithCaptcha    = false;
+    private $auctionInfo            = null;
+    private $captchaId              = null;
+    private $loginWithCaptcha       = false;
 
-    private $debug               = false;
-    private $debugShowCaptcha    = false;
-    private $debugYahooBlocked   = false;
-    private $testsPath           = null;
+    private $debug                  = false;
+    private $debugShowCaptcha       = false;
+    private $debugYahooBlocked      = false;
+    private $testsPath              = null;
 
     private static $AUCTION_URL     = 'http://auctions.yahoo.co.jp/';
     private static $LOGIN_CHECK_URL = 'https://auctions.yahoo.co.jp/';
@@ -198,11 +200,11 @@ class Browser
      *
      * @param  int $page Number of page with won lots
      * @return array     Return array with only won auction IDs
-     * @throws BrowserException
+     * @throws LoggedOffException
      */
     public function getWonIds($page = 1)
     {
-        if (!$this->checkLogin()) throw new BrowserException('Logged off');
+        if (!$this->checkLogin()) throw new LoggedOffException;
 
         $query = [
             'select'  => 'won',
@@ -220,11 +222,11 @@ class Browser
      *
      * @param  int $page Number of bidding page
      * @return array     Return array with lot information and bidding pages if they exist
-     * @throws BrowserException
+     * @throws LoggedOffException
      */
     public function getBiddingLots($page = 1)
     {
-        if (!$this->checkLogin()) throw new BrowserException('Logged off');
+        if (!$this->checkLogin()) throw new LoggedOffException;
 
         $query = [
             'select'  => 'bidding',
@@ -240,12 +242,13 @@ class Browser
     /**
      * Bid on yahoo lot
      *
-     * @param  string $auc_id   auction ID
-     * @param  int $price       Price to bid
-     * @return bool             Return true if bid was successful
-     * @throws ApiException     Throw exception if has API error
-     * @throws BrowserException Throw exception if something wrong
-     * @throws RebidException   Throw exception if price of bid under then current price
+     * @param  string $auc_id        auction ID
+     * @param  int $price            Price to bid
+     * @return bool                  Return true if bid was successful
+     * @throws ApiException          Throw exception if has API error
+     * @throws BrowserException      Throw exception if something wrong
+     * @throws RebidException        Throw exception if price of bid under then current price
+     * @throws AuctionEndedException Throw exception if auction has already closed
      *
      */
     public function bid($auc_id, $price = 0)
@@ -253,7 +256,7 @@ class Browser
         $info = $this->getAuctionInfoAsXml($auc_id);
 
         if ( (string) $info->Result->Status != 'open' ) {
-            throw new BrowserException('Auction has ended', 10);
+            throw new AuctionEndedException;
         }
 
         $auc_url = (string) $info->Result->AuctionItemUrl;
@@ -262,7 +265,7 @@ class Browser
         try {
             $inputs = Parser::getHiddenInputs($body);
         } catch (ParserException $e) {
-            throw new BrowserException($e->getMessage());
+            throw new BrowserException($e->getMessage(), $e->getCode());
         }
 
         $options = $this->createBidRequestOptions($inputs, $price);
@@ -271,7 +274,7 @@ class Browser
         try {
             $inputs = Parser::getHiddenInputs($body);
         } catch (ParserException $e) {
-            throw new BrowserException($e->getMessage());
+            throw new BrowserException($e->getMessage(), $e->getCode());
         }
 
         $options = $this->createBidRequestOptions($inputs, $price);
@@ -280,7 +283,7 @@ class Browser
         try {
             $result = Parser::getResult($body);
         } catch (ParserException $e) {
-            throw new BrowserException($e->getMessage());
+            throw new BrowserException($e->getMessage(), $e->getCode());
         }
 
         return $result;
@@ -314,7 +317,7 @@ class Browser
         try {
             $inputs = Parser::getHiddenInputs($body);
         } catch (ParserException $e) {
-            throw new LoginException($e->getMessage());
+            throw new LoginException($e->getMessage(), $e->getCode());
         }
         $options = $this->createLoginOptions($inputs, $ak);
 
