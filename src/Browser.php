@@ -126,6 +126,7 @@ class Browser
      * @param  string $auc_id   Auction ID
      * @return SimpleXMLElement Return XML Object
      * @throws ApiException Throw exception if auction id is invalid or not found etc.
+     * @throws \GuzzleHttp\Exception\GuzzleException
      *
      */
     public function getAuctionInfoAsXml($auc_id)
@@ -166,6 +167,7 @@ class Browser
      * @param  string $auc_id Auction ID
      * @return array          Return array with images url from stored auctionInfo
      * @throws ApiException   Throw exception if has API error
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function getAuctionImgsUrl($auc_id = null)
     {
@@ -201,6 +203,7 @@ class Browser
      * @param  int $page Number of page with won lots
      * @return array     Return array with only won auction IDs
      * @throws LoggedOffException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function getWonIds($page = 1)
     {
@@ -223,6 +226,7 @@ class Browser
      * @param  int $page Number of bidding page
      * @return array     Return array with lot information and bidding pages if they exist
      * @throws LoggedOffException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function getBiddingLots($page = 1)
     {
@@ -295,7 +299,7 @@ class Browser
      * @return bool             Return true if success
      * @throws LoginException
      * @throws CaptchaException
-     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function login()
     {
@@ -331,15 +335,12 @@ class Browser
         }
 
         if ($this->isCaptchaRequired($body)) {
-            file_put_contents('captcha.html', $body);
             throw new CaptchaException;
         }
 
         if (strpos($body, 'In order to prevent unauthorized access, your access to Yahoo! JAPAN has been restricted.') !== false) {
             throw new LoginException('Yahoo blocked your account for a while');
         }
-
-        file_put_contents('login_fail.html', $body);
 
         throw new LoginException('Unexpected behavior');
     }
@@ -353,6 +354,7 @@ class Browser
      * @return bool                 Return true if success
      * @throws LoginException
      * @throws ParserException
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function loginWithCaptcha($captchaId, $captchaAnswer)
     {
@@ -360,7 +362,6 @@ class Browser
         $options = $this->createCaptchaOptions($captchaId, $captchaAnswer);
         $body = $this->getBody(static::$LOGIN_URL, $options, 'POST');
 
-        file_put_contents('001.html', $body);
         if (!$ak = $this->getAlbatrossKey($body)) {
             throw new LoginException('Albatross key not found after captcha');
         }
@@ -373,7 +374,6 @@ class Browser
         if (!$this->debug) sleep(3);
 
         $body = $this->getBody(static::$LOGIN_URL, $options, 'POST');
-        file_put_contents('002.html', $body);
 
         if ($this->checkLogin($body)) {
             return true;
@@ -385,6 +385,7 @@ class Browser
     /**
      * @param string $body Body of the document
      * @return bool        Return true if logged in
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function checkLogin(&$body = null)
     {
@@ -509,7 +510,7 @@ class Browser
      * @param  array  $options Query parameters if method is GET or data values if method is POST
      * @param  string $method  Request method
      * @return string          Return body of HTML
-     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     private function getBody($url, $options = [], $method = 'GET')
     {

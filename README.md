@@ -134,7 +134,7 @@ $browser->bid("x000000000", 500);  // Rebid page, bid failed
 $browser->bid("x000000000", 1000); // Success
 ```
 
-## About v1.2.1
+## About v1.2.x
 
 ### Features
 - Detect a page with a captcha. If you send a lot of requests to login.
@@ -148,10 +148,12 @@ $browser->bid("x000000000", 1000); // Success
 
 ### Bugfixes
 - Fixed Yahoo login.
+- Fixed checking login.
 
 ### Updates
 - Login to Yahoo has moved to a separated method from the constructor of the class.
-- The `ParserException` won't throw anymore, instead `BrowserException` will be thrown
+- The `ParserException` won't throw anymore, instead `BrowserException` will be thrown 
+- Updated the composer.json file
 - Other refactoring of a code.
 
 ### Notes
