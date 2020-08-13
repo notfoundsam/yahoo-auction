@@ -35,17 +35,9 @@ class Parser
      */
     public static function checkLogin(&$body, &$userName)
     {
-        $html = static::getHtmlDom($body);
+        preg_match('/ようこそ、.+('.$userName.').+さん/', $body, $matches);
 
-        if ($p_result = $html->find('div[class=yjmthloginarea]', 0))
-        {
-            if ($userName == trim($p_result->find('strong', 0)->innertext))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return isset($matches[1]) && $matches[1] === $userName;
     }
 
     /**
