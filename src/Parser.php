@@ -19,9 +19,9 @@ class Parser
 {
     private static $JP          = array(",", "円", "分", "時間", "日");
     private static $EN          = array("", "", "min", "hour", "day");
-    private static $BID_SUCCESS = '入札を受け付けました。あなたが現在の最高額入札者です。';
+    private static $BID_SUCCESS = '入札を受け付けました';
     private static $PRICE_UP    = '/再入札/';
-    private static $AUCTION_WON = 'おめでとうございます!!　あなたが落札しました。';
+    private static $AUCTION_WON = 'あなたが落札しました';
     private static $TABLE_WON   = 8;
     private static $TABLE_BID   = 8;
 
@@ -196,36 +196,19 @@ class Parser
      */
     public static function getResult(&$body)
     {
-        $html = static::getHtmlDom($body);
+        $bidSucces = strpos($body, static::$BID_SUCCESS);
 
-        if ($p_result = $html->find('div[id=modAlertBox]', 0))
-        {
-            if (static::$BID_SUCCESS == trim($p_result->find('strong', 0)->innertext))
-            {
-                return true;
-            }
-            else if (static::$AUCTION_WON == trim($p_result->find('strong', 0)->innertext))
-            {
-                return true;
-            }
-            else
-            {
-                throw new ParserException('Page says: '.$p_result->innertext, 50);
-            }
-        }
-        else if ($p_result = $html->find('div[class=RebidText]', 0))
-        {
-            if (preg_match(static::$PRICE_UP, $p_result))
-            {
-                throw new RebidException;
-            }
-            else
-            {
-                throw new ParserException('Parser could not find result, maybe price goes up', 30);
-            }
+        if ($bidSucces !== false) return true;
+
+        $actionWon = strpos($body, static::$AUCTION_WON);
+
+        if ($actionWon !== false) return true;
+
+        if (preg_match(static::$PRICE_UP, $body)) {
+            throw new RebidException;
         }
 
-        return false;
+        throw new ParserException('Page says: '.$body, 50);
     }
 
     /**
