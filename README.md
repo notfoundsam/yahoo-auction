@@ -128,7 +128,7 @@ $browser->bid("x000000000", 1000); // Success
 ## About v1.3.x
 
 ### Features
-- Added xdebug to docker container.
+- Added xdebug to the docker container.
 
 ### Updates
 - Yahoo auction API was removed because Yahoo fully closed their API.
@@ -136,7 +136,7 @@ $browser->bid("x000000000", 1000); // Success
 
 ### Notes
 - Field `$appId` don't need anymore, pass null instead to the `Browser` constructor.
-- Method `$browser->getAuctionInfoAsXml("...")` returns shorted version of API result. Currently, available fields: `Title`, `Seller->Id`, `Img`, `Price`, `TaxinPrice`, `StartTime`, `EndTime`, `Status`.
+- Method `$browser->getAuctionInfoAsXml("...")` returns shorted version of API result. Currently, available fields: `AuctionID`, `AuctionItemUrl`, `Title`, `Seller->Id`, `Img`, `Price`, `TaxinPrice`, `StartTime`, `EndTime`, `Status`.
 
 ### Migration from v1.2.x
 - Check available fields for `$browser->getAuctionInfoAsXml("...")` in Notes.
