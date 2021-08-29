@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
 use SimpleXMLElement;
 use Yahooauc\Exceptions\ApiException;
+use Yahooauc\Exceptions\PageNotfoundException;
 use Yahooauc\Exceptions\CaptchaException;
 use Yahooauc\Exceptions\AuctionEndedException;
 use Yahooauc\Exceptions\LoggedOffException;
@@ -29,7 +30,6 @@ class Browser
 {
     private $userName;
     private $userPass;
-    private $appId;
     private $requestOptions;
 
     private $client;
@@ -49,8 +49,8 @@ class Browser
     private static $OPEN_USER       = 'https://auctions.yahoo.co.jp/openuser/jp/show/mystatus';
     private static $BID_PREVIEW     = 'https://auctions.yahoo.co.jp/jp/show/bid_preview';
     private static $PLACE_BID       = 'https://auctions.yahoo.co.jp/jp/config/placebid';
-    private static $API_URL         = 'https://auctions.yahooapis.jp/AuctionWebService/V2/auctionItem';
 
+    private static $AUCTION_BID_URL = 'https://page.auctions.yahoo.co.jp/jp/auction/';
     private static $DEBUG_BID       = 'https://page.auctions.yahoo.co.jp/jp/auction/x000000000';
 
     private static $BROWSER_HEADERS = [
@@ -77,7 +77,6 @@ class Browser
 
         $this->userName       = $userName;
         $this->userPass       = $userPass;
-        $this->appId          = $appId;
         $this->requestOptions = $requestOptions;
 
         $cookies = $cookieJar ? $cookieJar : new CookieJar;
@@ -93,7 +92,7 @@ class Browser
     public function debug($debug, $testsPath = null)
     {
         $this->debug = $debug;
-        $this->testsPath = $testsPath ? $testsPath : realpath(__DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'tests').DIRECTORY_SEPARATOR;
+        $this->testsPath = $testsPath ?: realpath(__DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'tests').DIRECTORY_SEPARATOR;
     }
 
     /**
@@ -131,34 +130,14 @@ class Browser
      */
     public function getAuctionInfoAsXml($auc_id)
     {
-        $query = [
-            'appid' => $this->appId,
-            'auctionID' => $auc_id,
-        ];
+        $url = self::$AUCTION_BID_URL.$auc_id;
+        $body = $this->getBody($url);
 
-        $body = $this->getBody(static::$API_URL, $query);
+        $aucXml = new AuctionXml($body);
+        $aucXml->setAuctionId($auc_id);
+        $aucXml->setAuctionUrl($url);
 
-        $info = simplexml_load_string($body);
-
-        if (isset($info->Code))
-        {
-            if ( (int) $info->Code == 301)
-            {
-                throw new ApiException('Auction not found', 301);
-            }
-            else if ( (int) $info->Code == 302 )
-            {
-                throw new ApiException('Auction ID is invalid', 302);
-            }
-        }
-        else if (isset($info->Message))
-        {
-            throw new ApiException($info->Message, 403);
-        }
-
-        $this->auctionInfo = $info;
-        
-        return $info;
+        return $aucXml->getXml();
     }
 
     /**
@@ -257,14 +236,12 @@ class Browser
      */
     public function bid($auc_id, $price = 0)
     {
-        $info = $this->getAuctionInfoAsXml($auc_id);
+        $auc_url = self::$AUCTION_BID_URL.$auc_id;
+        $body = $this->getBody($auc_url);
 
-        if ( (string) $info->Result->Status != 'open' ) {
+        if (Parser::isEnded($body)) {
             throw new AuctionEndedException;
         }
-
-        $auc_url = (string) $info->Result->AuctionItemUrl;
-        $body = $this->getBody($auc_url);
 
         try {
             $inputs = Parser::getHiddenInputs($body);
@@ -522,6 +499,10 @@ class Browser
             $response = $this->client->post($url, ['form_params' => $options]);
         }
 
+        if ($response->getStatusCode() == 404) {
+            throw new PageNotfoundException;
+        }
+
         return $response->getBody()->getContents();
     }
 
@@ -588,9 +569,13 @@ class Browser
      */
     private function readFile($url, $options, $method)
     {
-        $testsPath = realpath(__DIR__.'/../tests/').DIRECTORY_SEPARATOR;
+        $testsPath = $this->testsPath;
 
         switch ($url) {
+            case static::$AUCTION_BID_URL.'e000000000':
+                return file_get_contents($testsPath.'auction_ended.html');
+            case static::$AUCTION_BID_URL.'n000000000':
+                throw new PageNotfoundException;
             case static::$AUCTION_URL:
                 return file_get_contents($testsPath.'auction_url.html');
             
@@ -611,32 +596,6 @@ class Browser
 
             case static::$LOGIN_CHECK_URL:
                 return file_get_contents($testsPath.'login_url_post.html');
-
-            case static::$API_URL:
-                if ($options)
-                {
-                    if (!isset($options['appid']) || !isset($options['auctionID']))
-                    {
-                        return file_get_contents($testsPath.'api_bad_request.xml');
-                    }
-                    if ($options['appid'] != 'app_id_random_hash')
-                    {
-                        return file_get_contents($testsPath.'api_forbidden.xml');
-                    }
-                    if (!preg_match('/[a-z]{1}[0-9]{9}/', $options['auctionID']))
-                    {
-                        return file_get_contents($testsPath.'api_302.xml');
-                    }
-                    if (!in_array($options['auctionID'], ['e000000000', 'x000000000']))
-                    {
-                        return file_get_contents($testsPath.'api_301.xml');
-                    }
-                    if ($options['auctionID'] == 'e000000000')
-                    {
-                        return file_get_contents($testsPath.'api_url_ended.xml');
-                    }
-                }
-                return file_get_contents($testsPath.'api_url.xml');
             
             case static::$OPEN_USER:
                 return file_get_contents($testsPath.'open_user.html');

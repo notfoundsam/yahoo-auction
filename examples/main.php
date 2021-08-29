@@ -4,13 +4,14 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Yahooauc\Browser as Browser;
 use Yahooauc\Exceptions\AuctionEndedException;
+use Yahooauc\Exceptions\BrowserException;
 use Yahooauc\Exceptions\CaptchaException;
 use Yahooauc\Exceptions\LoggedOffException;
 use Yahooauc\Exceptions\LoginException;
 
 $userName = "test_user";
 $userPass = "secret_password";
-$appId    = "app_id_random_hash";
+$appId    = null;
 
 $captchaId = "AgAAAIkBAAABAAAAAAAAAAABA";
 $captchaAnswer = "くやひよかとむちひな";
@@ -25,10 +26,10 @@ $browser = new Browser($userName, $userPass, $appId, $cookieJar);
 $browser->debug(true);
 
 /* Emulate very many attempts to login */
-$browser->debugShowCaptcha(true);
+// $browser->debugShowCaptcha(true);
 
 /* Emulate too many attempts to login and get ban */
-$browser->debugYahooBlocked(true);
+// $browser->debugYahooBlocked(true);
 
 /* Check is logged in */
 var_dump($browser->checkLogin());
@@ -41,7 +42,7 @@ try {
     // var_dump($browser->loginWithCaptcha($captchaId, $captchaAnswer));
 
     /* Get information about lot */
-    var_dump($browser->getAuctionInfoAsXml("lotId"));
+    var_dump($browser->getAuctionInfoAsXml("e000000000"));
 
     /* Get list of lots from first bidding page */
     var_dump($browser->getBiddingLots(1));
@@ -50,7 +51,7 @@ try {
     var_dump($browser->getWonIds(1));
 
     /* Bid on lot */
-    var_dump($browser->bid("lotId", 100));
+    var_dump($browser->bid("x000000000", 100));
 
     /* Save latest cookie */
     $cookieJar = $browser->getCookie();
@@ -61,6 +62,8 @@ try {
 } catch (LoggedOffException $e) {
     echo trim($e->getMessage())."\n";
 } catch (AuctionEndedException $e) {
+    echo trim($e->getMessage())."\n";
+} catch (BrowserException $e) {
     echo trim($e->getMessage())."\n";
 } catch (CaptchaException $e) {
     echo $e->getMessage()."\n";
@@ -74,4 +77,3 @@ try {
 } catch (Exception $e) {
     echo trim($e->getMessage())."\n";
 }
-
