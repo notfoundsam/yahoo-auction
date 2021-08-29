@@ -23,13 +23,12 @@ use Yahooauc\Browser as Browser;
 
 $userName = "your_yahoo_user";
 $userPass = "your_yahoo_pass";
-$appId    = "your_app_id";
 
 /* Get saved cookie */
 $cookie = file_get_contents('cookie.cache');
 $cookieJar = $cookie !== false ? unserialize($cookie) : [];
 
-$browser = new Browser($userName, $userPass, $appId, $cookieJar);
+$browser = new Browser($userName, $userPass, null, $cookieJar);
 ```
 If you don't have cookies yet try to login into Yahoo. 
 It throws `LoginException` or `CaptchaException` if something wrong.
@@ -79,31 +78,25 @@ Replace `test_user` with something else to throw `LoginException`. It means the 
 ```
 $userName = "not_test_user";
 $userPass = "secret_password";
-$appId    = "app_id_random_hash";
 
-$browser = new Browser($userName, $userPass, $appId, []);
+$browser = new Browser($userName, $userPass, null, []);
 $browser->debug($debug = true);
-```
-Replace `app_id_random_hash` with something else to throw `ApiException`.  
-Pass something other than the following format `x000000000` to throw `ApiException`. It means the auction ID is invalid.  
-Pass something in the following format `x000000000` like `x000000001` to throw `ApiException`. It means the auction not found.
+```  
+Pass the following id `n000000000` to throw `PageNotfoundException`. It means the auction not found.
 ```
 $userName = "test_user";
 $userPass = "secret_password";
-$appId    = "not_app_id_random_hash";
 
-$browser = new Browser($userName, $userPass, $appId, []);
+$browser = new Browser($userName, $userPass, null, []);
 $browser->debug($debug = true);
-$browser->getAuctionInfoAsXml("xxxxxxx01");
-$browser->getAuctionInfoAsXml("x000000001");
+$browser->getAuctionInfoAsXml("n000000000");
 ```
 Get an array of fake data from the first bidding page.
 ```
 $userName = "test_user";
 $userPass = "secret_password";
-$appId    = "app_id_random_hash";
 
-$browser = new Browser($userName, $userPass, $appId, []);
+$browser = new Browser($userName, $userPass, null, []);
 $browser->debug($debug = true);
 $browser->getBiddingLots(1);
 ```
@@ -111,22 +104,20 @@ Get an array of fake IDs from the first won page.
 ```
 $userName = "test_user";
 $userPass = "secret_password";
-$appId    = "app_id_random_hash";
 
-$browser = new Browser($userName, $userPass, $appId, []);
+$browser = new Browser($userName, $userPass, null, []);
 $browser->debug($debug = true);
 $browser->getWonIds(1);
 ```
-Bid on the following lot `e000000000` to throw `BrowserException`. This auction has already ended.  
+Bid on the following lot `e000000000` to throw `AuctionEndedException`. This auction has already ended.  
 Bid on the following lot `x000000000` with price under `220` to throw `BrowserException`. It means your price is lower than the current price.  
 Bid on the following lot `x000000000` with price between `220` and `999` to throw `RebidException`. It means the price of the lot has rose, and the bid failed.  
 Bid on the following lot `x000000000` with price more than `999` for a successful bid.
 ```
 $userName = "test_user";
 $userPass = "secret_password";
-$appId    = "app_id_random_hash";
 
-$browser = new Browser($userName, $userPass, $appId, []);
+$browser = new Browser($userName, $userPass, null, []);
 $browser->debug($debug = true);
 $browser->bid("e000000000", 1000); // Has already ended
 $browser->bid("x000000000", 100);  // Not enough
@@ -134,31 +125,18 @@ $browser->bid("x000000000", 500);  // Rebid page, bid failed
 $browser->bid("x000000000", 1000); // Success
 ```
 
-## About v1.2.x
+## About v1.3.x
 
 ### Features
-- Detect a page with a captcha. If you send a lot of requests to login.
-- Detect a page with ban. If you send too many requests to login.
-- Added method to check login. `checkLogin()`
-- The `getBiddingLots()` method and `getWonIds()` now throw `LoggedOffException`
-- The `login()` method throws `LoginException` and `CaptchaException`
-- The `bid($auc_id, $price)` method now throws `ApiException`, `BrowserException`, `RebidException`, `AuctionEndedException`
-- You can emulate very many attempts to login in debugging mode.
-- You can emulate too many attempts to login and get ban in debugging mode.
-
-### Bugfixes
-- Fixed Yahoo login.
-- Fixed checking login.
+- Added xdebug to docker container.
 
 ### Updates
-- Login to Yahoo has moved to a separated method from the constructor of the class.
-- The `ParserException` won't throw anymore, instead `BrowserException` will be thrown 
-- Updated the composer.json file
-- Other refactoring of a code.
+- Yahoo auction API was removed because Yahoo fully closed their API.
+- If the page or lot not found it will throw `PageNotfoundException`.
 
 ### Notes
-- Replaced `rmccue/requests` with `guzzlehttp/guzzle`
+- Field `$appId` don't need anymore, pass null instead to the `Browser` constructor.
+- Method `$browser->getAuctionInfoAsXml("...")` returns shorted version of API result. Currently, available fields: `Title`, `Seller->Id`, `Img`, `Price`, `TaxinPrice`, `StartTime`, `EndTime`, `Status`.
 
-### Migration from v1.1.x
-- You need call `$browser->login()` manually after creating the `Browser` class
-- Also, try to learn from code.
+### Migration from v1.2.x
+- Check available fields for `$browser->getAuctionInfoAsXml("...")` in Notes.

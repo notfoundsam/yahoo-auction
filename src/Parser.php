@@ -22,6 +22,7 @@ class Parser
     private static $BID_SUCCESS = '入札を受け付けました';
     private static $PRICE_UP    = '/再入札/';
     private static $AUCTION_WON = 'あなたが落札しました';
+    private static $AUCTION_ENDED = 'このオークションは終了しています';
     private static $TABLE_WON   = 8;
     private static $TABLE_BID   = 8;
 
@@ -212,6 +213,19 @@ class Parser
     }
 
     /**
+     * Check the auction closing
+     *
+     * @param $body
+     * @return bool
+     */
+    public static function isEnded(&$body)
+    {
+        $isEnded = strpos($body, static::$AUCTION_ENDED);
+
+        return ($isEnded !== false);
+    }
+
+    /**
      * @param $body
      * @return mixed
      */
@@ -227,15 +241,146 @@ class Parser
     }
 
     /**
-     * Create DOM tree from HTML
-     *
-     * @throws ParserException Throw exception if HTML is empty
-     *
+     * @param $html
+     * @return string
      */
-    private static function getHtmlDom(&$body)
+    public static function getAuctionTitle($html)
     {
-        if (!$body)
-        {
+        $val = $html->find('.ProductTitle__text', 0);
+
+        return $val ? $val->innertext : '';
+    }
+
+    /**
+     * @param $html
+     * @return string
+     */
+    public static function getAuctionSellerId($html)
+    {
+        $val = $html->find('.Seller__name a', 0);
+
+        return $val ? $val->innertext : '';
+    }
+
+    /**
+     * @param $html
+     * @return array
+     */
+    public static function getAuctionImagesUrl($html)
+    {
+        $urls = [];
+
+        if ($items = $html->find('.ProductImage__images img')) {
+            foreach ($items as $item) {
+                $urls[] = $item->src;
+            }
+        }
+
+        return $urls;
+    }
+
+    /**
+     * @param $html
+     * @return array
+     */
+    public static function getAuctionPrice($html)
+    {
+        $data = [
+            'price' => 0,
+            'taxPrice' => 0,
+        ];
+
+        $priceValue = $html->find('.Price__value', 0);
+
+        if ($priceValue) {
+            $text = str_replace(',', '', $priceValue->innertext);
+            preg_match_all('/([0-9]{1,}).?円/', $text, $matches);
+
+            if (isset($matches[1])) {
+                $data['price'] = (int) $matches[1][0];
+
+                if (isset($matches[1][1])) {
+                    $data['taxPrice'] = (int) $matches[1][1];
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param $html
+     * @return array
+     */
+    public static function getAuctionDetail($html)
+    {
+        $data = [
+            'count' => '',
+            'start' => '',
+            'end' => '',
+        ];
+
+        if ($rows = $html->find('.ProductDetail__item')) {
+            foreach ($rows as $row) {
+                $dt = $row->find('dt', 0);
+                $dd = $row->find('dd', 0);
+                $timePattern = '/([0-9]{4})\.([0-9]{2})\.([0-9]{2}).+([0-9]{2}:[0-9]{2})/';
+
+                if ($dt && $dd) {
+                    $title = $dt->innertext;
+                    $value = trim(str_replace('<span class="ProductDetail__bullet">：</span>', '', $dd->innertext));
+
+                    if ($title == '個数') {
+                        $data['count'] = $value;
+                    }
+                    else if ($title == '開始日時') {
+                        if (preg_match($timePattern, $value , $matches)) {
+                            $data['start'] = $matches[1].'-'.$matches[2].'-'.$matches[3].'T'.$matches[4].':00+09:00';
+                        }
+                    }
+                    else if ($title == '終了日時') {
+                        if (preg_match($timePattern, $value , $matches)) {
+                            $data['end'] = $matches[1].'-'.$matches[2].'-'.$matches[3].'T'.$matches[4].':00+09:00';
+                        }
+                    }
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param $html
+     * @return string
+     */
+    public static function getAuctionStatus($html)
+    {
+        $status = 'open';
+
+        $val = $html->find('#closedHeader', 0);
+
+        if ($val) {
+            $innerText = $val->innertext;
+
+            if (self::isEnded($innerText)) {
+                $status = 'ended';
+            }
+        }
+
+        return $status;
+    }
+
+    /**
+     * * Create DOM tree from HTML
+     *
+     * @param string $body
+     * @return false|mixed
+     * @throws ParserException Throw exception if HTML is empty
+     */
+    public static function getHtmlDom(&$body)
+    {
+        if (!$body) {
             throw new ParserException('Body of HTML Document is empty', 10);
         }
 
