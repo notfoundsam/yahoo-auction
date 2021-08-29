@@ -4,6 +4,7 @@ namespace Yahooauc;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
+use GuzzleHttp\Exception\ClientException;
 use SimpleXMLElement;
 use Yahooauc\Exceptions\ApiException;
 use Yahooauc\Exceptions\PageNotfoundException;
@@ -493,14 +494,17 @@ class Browser
     {
         if ($this->debug) return $this->readFile($url, $options, $method);
 
-        if ($method === 'GET') {
-            $response = $this->client->get($url, ['query' => $options]);
-        } else if ($method === 'POST') {
-            $response = $this->client->post($url, ['form_params' => $options]);
+        try {
+            if ($method === 'GET') {
+                $response = $this->client->get($url, ['query' => $options]);
+            } else if ($method === 'POST') {
+                $response = $this->client->post($url, ['form_params' => $options]);
+            }
         }
-
-        if ($response->getStatusCode() == 404) {
-            throw new PageNotfoundException;
+        catch (ClientException $e) {
+            if ($e->getCode() == 404) {
+                throw new PageNotfoundException;
+            }
         }
 
         return $response->getBody()->getContents();
