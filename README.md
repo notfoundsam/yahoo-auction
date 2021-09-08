@@ -133,6 +133,11 @@ $browser->bid("x000000000", 1000); // Success
 ### Updates
 - Yahoo auction API was removed because Yahoo fully closed their API.
 - If the page or lot not found it will throw `PageNotfoundException`.
+- Check login with new request (Sometimes after login Yahoo shows different page).
+- Remove unnecessary request options in `Browser` constructor.
+
+### Fixes
+- The method `getAuctionImgsUrl` returned empty array.
 
 ### Notes
 - Field `$appId` don't need anymore, pass null instead to the `Browser` constructor.
