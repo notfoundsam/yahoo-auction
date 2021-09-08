@@ -31,7 +31,6 @@ class Browser
 {
     private $userName;
     private $userPass;
-    private $requestOptions;
 
     private $client;
     private $auctionInfo            = null;
@@ -43,7 +42,7 @@ class Browser
     private $debugYahooBlocked      = false;
     private $testsPath              = null;
 
-    private static $AUCTION_URL     = 'http://auctions.yahoo.co.jp/';
+    private static $AUCTION_URL     = 'https://auctions.yahoo.co.jp/';
     private static $LOGIN_CHECK_URL = 'https://auctions.yahoo.co.jp/';
     private static $LOGIN_URL       = 'https://login.yahoo.co.jp/config/login';
     private static $CLOSED_USER     = 'https://auctions.yahoo.co.jp/closeduser/jp/show/mystatus';
@@ -68,7 +67,7 @@ class Browser
      * @return void
      *
      */
-    public function __construct($userName, $userPass, $appId, $cookieJar = null, $requestOptions = [])
+    public function __construct($userName, $userPass, $appId, $cookieJar = null)
     {
         if ($env = getenv('YAHOO_AUC_ENV')) {
             if (strtolower($env) !== 'production') {
@@ -78,7 +77,6 @@ class Browser
 
         $this->userName       = $userName;
         $this->userPass       = $userPass;
-        $this->requestOptions = $requestOptions;
 
         $cookies = $cookieJar ? $cookieJar : new CookieJar;
         $this->client = new Client(['cookies' => $cookies, 'headers' => static::$BROWSER_HEADERS]);
@@ -138,7 +136,9 @@ class Browser
         $aucXml->setAuctionId($auc_id);
         $aucXml->setAuctionUrl($url);
 
-        return $aucXml->getXml();
+        $this->auctionInfo = $aucXml->getXml();
+
+        return $this->auctionInfo;
     }
 
     /**
@@ -308,7 +308,7 @@ class Browser
 
         $body = $this->getBody(static::$LOGIN_URL, $options, 'POST');
 
-        if ($this->checkLogin($body)) {
+        if ($this->checkLogin()) {
             return true;
         }
 
