@@ -580,8 +580,6 @@ class Browser
                 return file_get_contents($testsPath.'auction_ended.html');
             case static::$AUCTION_BID_URL.'n000000000':
                 throw new PageNotfoundException;
-            case static::$AUCTION_URL:
-                return file_get_contents($testsPath.'auction_url.html');
             
             case static::$LOGIN_URL:
                 if ($method == 'GET') {
