@@ -22,5 +22,8 @@
         "psr-4": {
             "Yahooauc\\": "src/"
         }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.5"
     }
 }
