@@ -23,6 +23,11 @@
             "Yahooauc\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\Utils\\": "tests/utils/"
+        }
+    },
     "require-dev": {
         "phpunit/phpunit": "^8.5"
     }
