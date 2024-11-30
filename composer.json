@@ -10,7 +10,7 @@
             "homepage": "https://github.com/notfoundsam"
         }
     ],
-    "version": "1.3.1",
+    "version": "1.3.2",
     "license": "MIT",
     "require": {
         "ext-simplexml": "*",
@@ -19,9 +19,10 @@
         "guzzlehttp/guzzle": "^6.0 || ^7.0"
     },
     "autoload": {
-        "psr-4": {
-            "Yahooauc\\": "src/"
-        }
+        "psr-4": { "Yahooauc\\": "src/" },
+        "exclude-from-classmap": [
+            "/tests/"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
